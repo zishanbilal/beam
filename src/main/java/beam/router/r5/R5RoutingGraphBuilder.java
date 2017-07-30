@@ -44,8 +44,8 @@ public class R5RoutingGraphBuilder {
                     (fromDepartureTimeList != null && fromDepartureTimeList.size() > 0)) {
 
                 //here we sum up the total time taken by each pattern
-                arrivalTimeInMillis = fromArrivalTimeList.get(0).getSecond() * 1000;
-                travelTime += arrivalTimeInMillis - (fromDepartureTimeList.get(0).getSecond() * 1000);
+                arrivalTimeInMillis = fromArrivalTimeList.get(0).toEpochSecond() * 1000;
+                travelTime += arrivalTimeInMillis - (fromDepartureTimeList.get(0).toEpochSecond() * 1000);
             }
 
             List<String> tripIdList = pattern.tripIds;
