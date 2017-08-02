@@ -16,17 +16,17 @@ import scala.collection.immutable
   *
   * Created by sfeygin on 4/5/17.
   */
-object Modes {
+object Modes { //level 1
 
   sealed abstract class BeamMode(val value: String, val otpMode: Option[TraverseMode], val r5Mode: Option[Either[LegMode,TransitModes]], val matsimMode: String) extends StringEnumEntry
 
-  object BeamMode extends StringEnum[BeamMode] with StringCirceEnum[BeamMode] {
+  object BeamMode extends StringEnum[BeamMode] with StringCirceEnum[BeamMode] { //level 2
 
     override val values: immutable.IndexedSeq[BeamMode] = findValues
 
     // Driving / Automobile-like (taxi is a bit of a hybrid)
 
-    case object CAR extends BeamMode(value = "car", Some(TraverseMode.CAR), Some(Left(LegMode.CAR)), TransportMode.car)
+    case object CAR extends BeamMode(value = "car", Some(TraverseMode.CAR), Some(Left(LegMode.CAR)), TransportMode.car) // level 3
 
     case object TAXI extends BeamMode(value = "taxi", Some(TraverseMode.CAR), Some(Left(LegMode.CAR)), TransportMode.other)
 
