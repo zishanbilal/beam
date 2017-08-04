@@ -2,7 +2,6 @@ package beam.utils;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-import static org.apache.commons.collections4.CollectionUtils.*;
 
 /**
  * Created by ahmar.nadeem on 6/6/2017.
@@ -18,7 +17,7 @@ public final class Collections {
      * null
      */
     public static <T> void ifPresentThenForEach(Collection<T> collection, Consumer<T> action) {
-        if (isNotEmpty(collection)) {
+        if (collection != null && collection.size() > 0)  {
             collection.forEach(action);
         }
     }
