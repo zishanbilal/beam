@@ -6,6 +6,7 @@ import com.conveyal.r5.transit.TransportNetwork;
 import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.time.ZoneId;
@@ -46,6 +47,7 @@ public class TripPlannerTest {
         tripPlanner = new TripPlanner();
     }
 
+    @Ignore
     @Test
     public void testInit() throws Exception {
 
@@ -65,6 +67,7 @@ public class TripPlannerTest {
         tripPlanner.logProfileResponse(response);
     }
 
+    @Ignore
     @Test
     public void testBuildRequest(){
         boolean isWheelChair = false;
