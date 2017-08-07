@@ -1,6 +1,7 @@
 package beam.util
 
 import beam.sim.config.BeamConfig
+import beam.sim.config.BeamConfig.Beam
 import beam.sim.config.BeamConfig.Beam.Routing
 import com.typesafe.config.ConfigFactory
 
@@ -26,7 +27,7 @@ object ConfigUtil {
     """.stripMargin
 
   def buildDefaultConfig: BeamConfig =
-    BeamConfig(null, BeamConfig.Beam(null, "beam", null, null, BeamConfig.Beam.Routing(ConfigFactory.parseString(TEST_CONFIG)), null), null, null)
+    BeamConfig(null, Beam(null, "beam", null, null, BeamConfig.Beam.Routing(ConfigFactory.parseString(TEST_CONFIG)), null, null), null, null)
 
   def buildDefaultRouting: Routing =
     BeamConfig.Beam.Routing(ConfigFactory.parseString(TEST_CONFIG))

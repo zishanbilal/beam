@@ -103,17 +103,17 @@ public class R5RoutingWorkerTest {
         when(transportNetwork.getTimeZone()).thenReturn(ZoneId.systemDefault());
 
         Coord fromCoord = new Coord(FROM_LONGITUDE, FROM_LATITUDE);
-        Facility fromFacility = new FakeFacility(fromCoord);
+//        Facility fromFacility = new FakeFacility(fromCoord);
 
         Coord toCoord = new Coord(TO_LONGITUDE, TO_LATITUDE);
-        Facility toFacility = new FakeFacility(toCoord);
+//        Facility toFacility = new FakeFacility(toCoord);
         RoutingModel.BeamTime departureTime = new RoutingModel.WindowTime(DateTimeUtil.calculateTimeFromBase(null), 30);
 
         VectorBuilder<Modes.BeamMode> modeBuilder = new VectorBuilder<>();
         modeBuilder.$plus$eq((Modes.BeamMode) Modes.BeamMode$.MODULE$.withValue("walk"));
         Vector<Modes.BeamMode> modes = modeBuilder.result();
 
-        ProfileRequest request = actor.buildRequest(fromFacility, toFacility, departureTime, modes);
+        ProfileRequest request = actor.buildRequest(fromCoord, toCoord, departureTime, modes);
         assertNotNull(request);
         assertFalse(request.isProfile());
         assertEquals(4, request.bikeTrafficStress);
@@ -172,7 +172,7 @@ public class R5RoutingWorkerTest {
         response.options = options;
 
         when(response.getOptions()).thenReturn(options);
-        BeamRouter.RoutingResponse actualResponse = actor.buildResponse(response);
+        Vector<RoutingModel.BeamTrip> actualResponse = actor.buildResponse(response);
         assertNotNull(actualResponse);
     }
 
@@ -324,10 +324,10 @@ public class R5RoutingWorkerTest {
         when(transportNetwork.getTimeZone()).thenReturn(ZoneId.systemDefault());
 
         Coord fromCoord = new Coord(FROM_LONGITUDE, FROM_LATITUDE);
-        Facility fromFacility = new FakeFacility(fromCoord);
+//        Facility fromFacility = new FakeFacility(fromCoord);
 
         Coord toCoord = new Coord(TO_LONGITUDE, TO_LATITUDE);
-        Facility toFacility = new FakeFacility(toCoord);
+//        Facility toFacility = new FakeFacility(toCoord);
 
         RoutingModel.BeamTime departureTime = new RoutingModel.WindowTime(DateTimeUtil.calculateTimeFromBase(null), 30);
 
@@ -337,7 +337,7 @@ public class R5RoutingWorkerTest {
 
         Person person = null;
 
-        BeamRouter.RoutingResponse response = actor.calcRoute(fromFacility, toFacility, departureTime, modes, person);
+        BeamRouter.RoutingResponse response = actor.calcRoute(BeamRouter.nextId(), fromCoord, toCoord, new BeamRouter.RoutingRequestParams(departureTime, modes, null), person);
         assertTrue(response != null);
     }
 }
