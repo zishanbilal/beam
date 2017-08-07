@@ -1,25 +1,18 @@
 package beam.agentsim.agents.vehicles
 
-import akka.actor.ActorRef
-import beam.agentsim.agents.PersonAgent.PersonData
+import akka.actor.{ActorRef, Props}
 import beam.agentsim.agents.{BeamAgent, PersonAgent}
+import beam.sim.{BeamServices, HasServices}
 import org.matsim.api.core.v01.Id
 import org.matsim.vehicles._
 
 
 
-class HumanBodyVehicle(val personId: Id[PersonAgent], val vehicleData: HumanBodyVehicleData,
-                       val trajectory: Trajectory, val powerTrain: Powertrain,
-                       var driver: Option[ActorRef] = None) extends BeamVehicle {
-  //XXX: be careful with traversing,  possible recursion
-  def passengers: List[ActorRef] = List(self)
+class HumanBodyVehicle(val vehicleId: Id[Vehicle], val personId: Id[PersonAgent], val beamServices: BeamServices, val data: HumanBodyVehicleData,
+                       var powerTrain: Powertrain, var driver: Option[ActorRef] = None) extends BeamVehicle with HasServices {
 
-  def carrier = None
+  override val id: Id[Vehicle] = vehicleId
 
-  override def receive: Receive = {
-    case _ =>
-      throw new UnsupportedOperationException
-  }
 }
 
 /**
@@ -29,7 +22,7 @@ class HumanBodyVehicle(val personId: Id[PersonAgent], val vehicleData: HumanBody
   */
 case class HumanDimension(weight: Double, height: Double) extends Dimension
 
-case class HumanBodyVehicleData(personId: Id[PersonAgent], personData: PersonData, dim: HumanDimension) extends VehicleData {
+case class HumanBodyVehicleData(personId: Id[PersonAgent], dim: HumanDimension) extends VehicleData {
   private lazy val humanBodyVehicleType = initVehicleType()
 
   private def initVehicleType() = {
@@ -48,4 +41,10 @@ case class HumanBodyVehicleData(personId: Id[PersonAgent], personData: PersonDat
   override def getType: VehicleType = humanBodyVehicleType
 
   override def getId: Id[Vehicle] = Id.create(personId.toString, classOf[Vehicle])
+}
+
+object HumanBodyVehicle {
+  //TODO make HumanDimension come from somewhere
+  def props(services: BeamServices, personId: Id[PersonAgent]) = Props(classOf[HumanBodyVehicle],services,
+    HumanBodyVehicleData(personId, HumanDimension(1.7, 60.0)), new Trajectory(), None)
 }
