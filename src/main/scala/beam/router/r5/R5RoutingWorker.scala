@@ -292,5 +292,10 @@ object R5RoutingWorker extends HasProps {
 
   var transportNetwork: TransportNetwork = null
 
+//  def apply(beamServices:BeamServices, transportNetwork: TransportNetwork ) ={
+//    R5RoutingWorker.transportNetwork = transportNetwork
+//    R5RoutingWorker(beamServices)
+//  }
+
   override def props(beamServices: BeamServices) = Props(classOf[R5RoutingWorker], beamServices)
 }
