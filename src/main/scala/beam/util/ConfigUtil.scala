@@ -33,7 +33,7 @@ object ConfigUtil {
     BeamConfig.Beam.Routing(ConfigFactory.parseString(TEST_CONFIG))
 
   def buildRoutingWithBaseDate(baseDate: String): Routing =
-    BeamConfig.Beam.Routing(baseDate, null, null, null, null)
+    BeamConfig.Beam.Routing(baseDate, null, null, null)
 
 
 
