@@ -27,7 +27,7 @@ object ConfigUtil {
     """.stripMargin
 
   def buildDefaultConfig: BeamConfig =
-    BeamConfig(null, Beam(null, "beam", null, null, BeamConfig.Beam.Routing(ConfigFactory.parseString(TEST_CONFIG)), null, null), null, null)
+    BeamConfig(null, Beam(null, "beam", null, null, null, BeamConfig.Beam.Routing(ConfigFactory.parseString(TEST_CONFIG)), null), null, null)
 
   def buildDefaultRouting: Routing =
     BeamConfig.Beam.Routing(ConfigFactory.parseString(TEST_CONFIG))
