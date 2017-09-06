@@ -87,7 +87,7 @@ public class R5RoutingWorkerTest {
         actor = ref.underlyingActor();
 
         transportNetwork = mock(TransportNetwork.class);
-        R5RoutingWorker.transportNetwork_$eq(transportNetwork);
+        NetworkCoordinator.transportNetwork_$eq(transportNetwork);
     }
 
     /**
@@ -173,7 +173,7 @@ public class R5RoutingWorkerTest {
         response.options = options;
 
         when(response.getOptions()).thenReturn(options);
-        Vector<RoutingModel.BeamTrip> actualResponse = actor.buildResponse(response);
+        R5RoutingWorker.TripFareTuple actualResponse = actor.buildResponse(response, true);
         assertNotNull(actualResponse);
     }
 
