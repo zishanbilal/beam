@@ -6,6 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Terminated}
 import akka.routing.{ActorRefRoutee, RoundRobinRoutingLogic, Router}
 import beam.agentsim.agents.PersonAgent
 import beam.agentsim.agents.vehicles.BeamVehicle.StreetVehicle
+import beam.performance.MonitorActor
 import beam.router.BeamRouter._
 import beam.router.Modes.BeamMode
 import beam.router.RoutingModel.{BeamTime, EmbodiedBeamTrip}
@@ -29,7 +30,7 @@ class BeamRouter(services: BeamServices) extends Actor with Stash with ActorLogg
     networkCoordinator = context.actorOf(NetworkCoordinator.props(services))
   }
 
-  def receive = uninitialized
+  override def receive = uninitialized
 
   // Uninitialized state
   def uninitialized: Receive = {
@@ -77,7 +78,7 @@ class BeamRouter(services: BeamServices) extends Actor with Stash with ActorLogg
     case updateRequest: UpdateTravelTime =>
       log.info("Received TravelTimeCalculator")
       networkCoordinator ! updateRequest
-    case msg => {
+    case msg: Any => {
       log.info(s"Unknown message[$msg] received by Router.")
     }
   }
@@ -154,5 +155,5 @@ object BeamRouter {
     }
   }
 
-  def props(beamServices: BeamServices) = Props(classOf[BeamRouter], beamServices)
+  def props(beamServices: BeamServices) = Props(new BeamRouter(beamServices) with MonitorActor)
 }

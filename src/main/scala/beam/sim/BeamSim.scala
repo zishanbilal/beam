@@ -16,6 +16,7 @@ import beam.agentsim.scheduler.BeamAgentScheduler
 import beam.agentsim.scheduler.BeamAgentScheduler.{ScheduleTrigger, StartSchedule}
 import beam.agentsim.agents.choice.mode._
 import beam.agentsim.events.handling.{BeamEventsHandling, BeamEventsLogger}
+import beam.performance.{MailboxStatistics, MonitorStatisticsActor, StatsPrinterActor}
 import beam.physsim.{DummyPhysSim, InitializePhysSim}
 import beam.router.BeamRouter
 import beam.router.BeamRouter.{InitTransit, InitializeRouter}
@@ -34,6 +35,7 @@ import org.matsim.households.Household
 import org.matsim.vehicles.{Vehicle, VehicleType, VehicleUtils}
 import org.slf4j.{Logger, LoggerFactory}
 
+import concurrent.duration._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Await
@@ -58,6 +60,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
   var currentIter = 0
 
   private implicit val timeout = Timeout(50000, TimeUnit.SECONDS)
+
 
   override def notifyStartup(event: StartupEvent): Unit = {
 //    eventsManager = services.matsimServices.getEvents
@@ -89,6 +92,11 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
     services.beamRouter = Await.result(routerFuture, timeout.duration).asInstanceOf[Created].ref
     val routerInitFuture = services.beamRouter ? InitializeRouter
     Await.result(routerInitFuture, timeout.duration)
+
+    val printer = actorSystem.actorOf(Props(new StatsPrinterActor),"StatsPrinter")
+    val stat = actorSystem.actorOf(Props(new MonitorStatisticsActor(period = 10 seconds, processMargin = 1000,
+      storeSummaries = printer)))
+    actorSystem.eventStream.subscribe(stat, classOf[MailboxStatistics])
 
     val physSimFuture = services.registry ? Registry.Register("physSim", DummyPhysSim.props(services))
     services.physSim = Await.result(physSimFuture, timeout.duration).asInstanceOf[Created].ref

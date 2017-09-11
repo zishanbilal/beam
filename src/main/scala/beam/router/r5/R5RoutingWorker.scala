@@ -1,7 +1,7 @@
 package beam.router.r5
 
 import java.io.File
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 import java.nio.file.Files.exists
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -13,6 +13,7 @@ import beam.agentsim.agents.vehicles._
 import beam.agentsim.agents.{InitializeTrigger, TransitDriverAgent}
 import beam.agentsim.events.SpaceTime
 import beam.agentsim.scheduler.BeamAgentScheduler.ScheduleTrigger
+import beam.performance.MonitorActor
 import beam.router.BeamRouter.{RoutingRequest, RoutingRequestTripInfo, RoutingResponse}
 import beam.router.Modes.BeamMode.{BUS, CABLE_CAR, FERRY, RAIL, SUBWAY, TRAM, TRANSIT, WALK}
 import beam.router.Modes.{BeamMode, _}
