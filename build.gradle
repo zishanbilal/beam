@@ -264,7 +264,7 @@ task repl(type: JavaExec) {
 }
 
 task downloadAspectj{
-    if (!project.file('build/aspectjweaver.jar').exists()) {
+    if (!project.file('build/aspectjweaver-1.8.10.jar').exists()) {
         download {
             src 'http://central.maven.org/maven2/org/aspectj/aspectjweaver/1.8.10/aspectjweaver-1.8.10.jar'
             dest buildDir
@@ -275,7 +275,7 @@ task downloadAspectj{
 task runMonitoring(dependsOn:[downloadAspectj], type: JavaExec) {
     main = "beam.sim.RunBeam"
     classpath = sourceSets.main.runtimeClasspath
-    jvmArgs = ['-javaagent:' + 'build/aspectjweaver.jar']
+    jvmArgs = ['-javaagent:' + 'build/aspectjweaver-1.8.10.jar']
     environment "PWD", System.getProperty("user.dir")
     args = ["--config", "test/input/application-sfbay/beam.conf"]
 }
