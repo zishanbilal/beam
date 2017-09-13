@@ -2,7 +2,6 @@ package beam.sim
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.FSM.SubscribeTransitionCallBack
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -12,15 +11,12 @@ import beam.agentsim.agents.vehicles.BeamVehicle.BeamVehicleIdAndRef
 import beam.agentsim.agents.vehicles._
 import beam.agentsim.agents.vehicles.household.HouseholdActor
 import beam.agentsim.events._
+import beam.agentsim.events.handling.BeamEventsLogger
 import beam.agentsim.scheduler.BeamAgentScheduler
-import beam.agentsim.scheduler.BeamAgentScheduler.{ScheduleTrigger, StartSchedule}
-import beam.agentsim.agents.choice.mode._
-import beam.agentsim.events.handling.{BeamEventsHandling, BeamEventsLogger}
-import beam.performance.{MailboxStatistics, MonitorStatisticsActor, StatsPrinterActor}
+import beam.agentsim.scheduler.BeamAgentScheduler.ScheduleTrigger
 import beam.physsim.{DummyPhysSim, InitializePhysSim}
 import beam.router.BeamRouter
 import beam.router.BeamRouter.{InitTransit, InitializeRouter}
-import beam.utils.JsonUtils
 import com.google.inject.Inject
 import glokka.Registry
 import glokka.Registry.Created
@@ -31,16 +27,13 @@ import org.matsim.api.core.v01.{Coord, Id}
 import org.matsim.core.api.experimental.events.{AgentWaitingForPtEvent, EventsManager, TeleportationArrivalEvent}
 import org.matsim.core.controler.events.{IterationEndsEvent, IterationStartsEvent, ShutdownEvent, StartupEvent}
 import org.matsim.core.controler.listener.{IterationEndsListener, IterationStartsListener, ShutdownListener, StartupListener}
-import org.matsim.core.events.EventsUtils
 import org.matsim.households.Household
 import org.matsim.vehicles.{Vehicle, VehicleType, VehicleUtils}
 import org.slf4j.{Logger, LoggerFactory}
 
-import concurrent.duration._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Await
-import scala.reflect.io.File
 import scala.util.Random
 
 /**
@@ -64,7 +57,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
 
 
   override def notifyStartup(event: StartupEvent): Unit = {
-//    eventsManager = services.matsimServices.getEvents
+    //    eventsManager = services.matsimServices.getEvents
 
 
     eventsManager = services.matsimServices.getEvents
@@ -87,7 +80,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
 
     services.modeChoiceCalculator = ModeChoiceCalculator(services.beamConfig.beam.agentsim.agents.modalBehaviors.modeChoiceClass, services)
 
-    val schedulerFuture = services.registry ? Registry.Register("scheduler", Props(classOf[BeamAgentScheduler], 3600 * 30.0, 300.0,services.beamConfig.beam.agentsim.debugEnabled==1))
+    val schedulerFuture = services.registry ? Registry.Register("scheduler", Props(classOf[BeamAgentScheduler], 3600 * 30.0, 300.0, services.beamConfig.beam.agentsim.debugEnabled == 1))
     services.schedulerRef = Await.result(schedulerFuture, timeout.duration).asInstanceOf[Created].ref
 
     val routerFuture = services.registry ? Registry.Register("router", BeamRouter.props(services))
@@ -95,10 +88,10 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
     val routerInitFuture = services.beamRouter ? InitializeRouter
     Await.result(routerInitFuture, timeout.duration)
 
-//    val printer = actorSystem.actorOf(Props(new StatsPrinterActor),"StatsPrinter")
-//    val stat = actorSystem.actorOf(Props(new MonitorStatisticsActor(period = 10 seconds, processMargin = 1000,
-//      storeSummaries = printer)))
-//    actorSystem.eventStream.subscribe(stat, classOf[MailboxStatistics])
+    //    val printer = actorSystem.actorOf(Props(new StatsPrinterActor),"StatsPrinter")
+    //    val stat = actorSystem.actorOf(Props(new MonitorStatisticsActor(period = 10 seconds, processMargin = 1000,
+    //      storeSummaries = printer)))
+    //    actorSystem.eventStream.subscribe(stat, classOf[MailboxStatistics])
 
     val physSimFuture = services.registry ? Registry.Register("physSim", DummyPhysSim.props(services))
     services.physSim = Await.result(physSimFuture, timeout.duration).asInstanceOf[Created].ref
@@ -129,8 +122,8 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
   }
 
   private def cleanupWriter() = {
-//    JsonUtils.processEventsFileVizData(services.matsimServices.getControlerIO.getIterationFilename(currentIter, s"events.xml${gzExtension}"),
-//      services.matsimServices.getControlerIO.getOutputFilename("trips.json"))
+    //    JsonUtils.processEventsFileVizData(services.matsimServices.getControlerIO.getIterationFilename(currentIter, s"events.xml${gzExtension}"),
+    //      services.matsimServices.getControlerIO.getOutputFilename("trips.json"))
   }
 
   private def cleanupVehicle(): Unit = {
@@ -230,7 +223,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
 
     //TODO if we can't do the following with generic Ids, then we should seriously consider abandoning typed IDs
     services.personRefs.foreach { case (id, ref) =>
-//      ref ! SubscribeTransitionCallBack(errorListener)  // Subscribes each person to the error listener
+      //      ref ! SubscribeTransitionCallBack(errorListener)  // Subscribes each person to the error listener
       services.agentRefs.put(id.toString, ref)
     }
   }
@@ -288,7 +281,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
     services.agentSimEventsBus.subscribe(eventSubscriber, eventType)
   }
 
-  private def createErrorListener(iter:Int): ActorRef = actorSystem.actorOf(ErrorListener.props(iter))
+  private def createErrorListener(iter: Int): ActorRef = actorSystem.actorOf(ErrorListener.props(iter))
 
 
 }
