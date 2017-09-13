@@ -9,6 +9,7 @@ import beam.sim.modules.{AgentsimModule, BeamAgentModule}
 import beam.sim.controler.corelisteners.BeamControllerCoreListenersModule
 import beam.sim.controler.BeamControler
 import beam.utils.FileUtils
+import kamon.Kamon
 import org.matsim.api.core.v01.Scenario
 import org.matsim.core.config.Config
 import org.matsim.core.controler._
@@ -84,7 +85,7 @@ object RunBeam extends RunBeam with App{
 
  """)
   def parseArgs() = {
-
+    Kamon.start()
     args.sliding(2, 1).toList.collect {
       case Array("--config", configName: String) if configName.trim.nonEmpty => ("config", configName)
       //case Array("--anotherParamName", value: String)  => ("anotherParamName", value)

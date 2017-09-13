@@ -190,6 +190,15 @@ dependencies {
 
     compile "org.slf4j:slf4j-api:${slf4jVersion}"
 
+    // Performance monitoring  //
+    compile("io.kamon:kamon-core_${scalaBinaryVersion}:0.6.7")
+    compile("io.kamon:kamon-akka-2.4_${scalaBinaryVersion}:0.6.7")
+//    compile("io.kamon:kamon-annotation_${scalaBinaryVersion}:0.6.7")
+//    compile("io.kamon:kamon-log-reporter_${scalaBinaryVersion}:0.6.7")
+
+//    compile 'org.aspectj:aspectjrt:1.8.8'
+//    compile 'org.aspectj:aspectjweaver:1.8.8'
+
 }
 
 // Task to run scala tests, as Scala tests not picked up by Gradle by default.
@@ -214,6 +223,8 @@ jar {
     }
 }
 
+
+
 shadowJar {
     baseName = 'beam'
     classifier = null
@@ -232,7 +243,7 @@ task generateConfig {
             }
         }
         javaexec {
-            main = "-jar";
+            main = "-jar"
             args = [
                     "build/tscfg-0.8.1.jar",
                     "--spec", "src/main/resources/beam-template.conf",
@@ -250,4 +261,12 @@ task repl(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     standardInput System.in
     args '-usejavacp'
+}
+
+task runMonitoring(type: JavaExec) {
+    main = "beam.sim.RunBeam"
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs = ['-javaagent:' + '/Users/sfeygin/aspectj1.8/lib/aspectjweaver.jar']
+    environment "PWD", System.getProperty("user.dir")
+    args = ["--config", "test/input/application-sfbay/beam.conf"]
 }

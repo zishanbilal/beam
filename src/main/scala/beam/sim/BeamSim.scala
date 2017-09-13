@@ -24,6 +24,7 @@ import beam.utils.JsonUtils
 import com.google.inject.Inject
 import glokka.Registry
 import glokka.Registry.Created
+import kamon.Kamon
 import org.matsim.api.core.v01.events._
 import org.matsim.api.core.v01.population.{Activity, Person}
 import org.matsim.api.core.v01.{Coord, Id}
@@ -65,6 +66,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
   override def notifyStartup(event: StartupEvent): Unit = {
 //    eventsManager = services.matsimServices.getEvents
 
+
     eventsManager = services.matsimServices.getEvents
 
     eventSubscriber = actorSystem.actorOf(Props(classOf[EventsSubscriber], eventsManager), "MATSimEventsManagerService")
@@ -93,10 +95,10 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
     val routerInitFuture = services.beamRouter ? InitializeRouter
     Await.result(routerInitFuture, timeout.duration)
 
-    val printer = actorSystem.actorOf(Props(new StatsPrinterActor),"StatsPrinter")
-    val stat = actorSystem.actorOf(Props(new MonitorStatisticsActor(period = 10 seconds, processMargin = 1000,
-      storeSummaries = printer)))
-    actorSystem.eventStream.subscribe(stat, classOf[MailboxStatistics])
+//    val printer = actorSystem.actorOf(Props(new StatsPrinterActor),"StatsPrinter")
+//    val stat = actorSystem.actorOf(Props(new MonitorStatisticsActor(period = 10 seconds, processMargin = 1000,
+//      storeSummaries = printer)))
+//    actorSystem.eventStream.subscribe(stat, classOf[MailboxStatistics])
 
     val physSimFuture = services.registry ? Registry.Register("physSim", DummyPhysSim.props(services))
     services.physSim = Await.result(physSimFuture, timeout.duration).asInstanceOf[Created].ref
@@ -158,6 +160,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
     actorSystem.stop(eventSubscriber)
     actorSystem.stop(services.schedulerRef)
     actorSystem.terminate()
+    Kamon.shutdown()
   }
 
   def resetPop(iter: Int): Unit = {
