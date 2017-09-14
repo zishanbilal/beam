@@ -122,7 +122,8 @@ class RideHailingManager(info: RideHailingManagerData, val beamServices: BeamSer
           val rideHailingVehicleAtPickup = StreetVehicle(rideHailingLocation.vehicleId, SpaceTime((customerPickUp, departAt.atTime)), CAR, asDriver = false)
           val routeRequests = Map(
             beamServices.beamRouter.path -> List(
-              RoutingRequest(rideHailing2CustomerRequestId, RoutingRequestTripInfo(rideHailingLocation.currentLocation.loc, customerPickUp, departAt, Vector(), Vector(rideHailingVehicleAtOrigin), personId)),
+              RoutingRequest(rideHailing2CustomerRequestId, RoutingRequestTripInfo(rideHailingLocation.currentLocation.loc, customerPickUp, departAt, Vector(),
+                Vector(rideHailingVehicleAtOrigin), personId)),
               //XXXX: customer trip request might be redundant... possibly pass in info
               RoutingRequest(customerTripRequestId, RoutingRequestTripInfo(customerPickUp, destination, departAt, Vector(), Vector(customerAgentBody, rideHailingVehicleAtPickup), personId)))
           )
@@ -161,13 +162,14 @@ class RideHailingManager(info: RideHailingManagerData, val beamServices: BeamSer
               log.info(s"Found ride to hail for  person=$personId and inquiryId=$inquiryId within $shortDistanceToRideHailingAgent meters, timeToCustomer=$timeToCustomer seconds and cost=$$$cost")
               RideHailingInquiryResponse(inquiryId, Vector(travelProposal))
             } else {
-              log.warn(s"Router could not find route to customer person=$personId for inquiryId=$inquiryId")
+              log.debug(s"Router could not find route to customer person=$personId for inquiryId=$inquiryId")
               lockedVehicles -= rideHailingLocation.vehicleId
               RideHailingInquiryResponse(inquiryId, Vector(), error = Option(CouldNotFindRouteToCustomer))
             }
           }
         case None =>
           // no rides to hail
+          log.debug(s"Router could not find vehicle for customer person=$personId for inquiryId=$inquiryId")
           customerAgent ! RideHailingInquiryResponse(inquiryId, Vector(), error = Option(VehicleUnavailable))
       }
 
@@ -187,6 +189,7 @@ class RideHailingManager(info: RideHailingManagerData, val beamServices: BeamSer
             handleReservation(inquiryId, vehiclePersonIds, customerPickUp, destination, customerAgent, closestRideHailingAgent, travelProposal, tripPlan)
           // We have an agent nearby, but it's not the one we originally wanted
           case Some((closestRideHailingAgent,_))  =>
+            lockedVehicles -= closestRideHailingAgent.vehicleId
             customerAgent ! ReservationResponse(Id.create(inquiryId.toString, classOf[ReservationRequest]), Left(VehicleUnavailable))
           case _ =>
             customerAgent ! ReservationResponse(Id.create(inquiryId.toString, classOf[ReservationRequest]), Left(VehicleUnavailable))
