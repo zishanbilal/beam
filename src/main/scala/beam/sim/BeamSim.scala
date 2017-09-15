@@ -15,6 +15,7 @@ import beam.agentsim.events._
 import beam.agentsim.events.handling.BeamEventsLogger
 import beam.agentsim.scheduler.BeamAgentScheduler
 import beam.agentsim.scheduler.BeamAgentScheduler.ScheduleTrigger
+import beam.performance.kamon.TracePrinter
 import beam.physsim.{DummyPhysSim, InitializePhysSim}
 import beam.router.BeamRouter
 import beam.router.BeamRouter.{InitTransit, InitializeRouter}
@@ -89,6 +90,8 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
     val routerInitFuture = services.beamRouter ? InitializeRouter
     Await.result(routerInitFuture, timeout.duration)
 
+    val printer  = actorSystem.actorOf(Props(new TracePrinter),"TracePrinter")
+    Kamon.tracer.subscribe(printer)
     //    val printer = actorSystem.actorOf(Props(new StatsPrinterActor),"StatsPrinter")
     //    val stat = actorSystem.actorOf(Props(new MonitorStatisticsActor(period = 10 seconds, processMargin = 1000,
     //      storeSummaries = printer)))

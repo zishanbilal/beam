@@ -31,6 +31,7 @@ import com.conveyal.r5.api.util._
 import com.conveyal.r5.point_to_point.builder.PointToPointQuery
 import com.conveyal.r5.profile.ProfileRequest
 import com.conveyal.r5.transit.{RouteInfo, TransitLayer, TransportNetwork}
+import kamon.trace.Tracer
 import org.matsim.api.core.v01.Id
 import org.matsim.api.core.v01.population.Person
 import org.matsim.utils.objectattributes.attributable.Attributes
@@ -178,35 +179,41 @@ class R5RoutingWorker(val beamServices: BeamServices) extends RoutingWorker {
   }
 
   override def calcRoute(requestId: Id[RoutingRequest], routingRequestTripInfo: RoutingRequestTripInfo, person: Person): RoutingResponse = {
-    //Gets a response:
-    val pointToPointQuery = new PointToPointQuery(transportNetwork)
-    val isRouteForPerson = routingRequestTripInfo.streetVehicles.exists(_.mode == WALK)
+    Tracer.withNewContext("routing trace", autoFinish = true) {
+      //Gets a response:
+      val routingSegment = Tracer.currentContext.startSegment("r5 trace", "routing", "router")
+        val pointToPointQuery = new PointToPointQuery(transportNetwork)
 
-    val profileRequestToVehicles: ProfileRequestToVehicles = if(isRouteForPerson){
-      buildRequestsForPerson(routingRequestTripInfo)
-    } else {
-      buildRequestsForNonPerson(routingRequestTripInfo)
-    }
-    val originalResponse = buildResponse(pointToPointQuery.getPlan(profileRequestToVehicles.originalProfile), isRouteForPerson)
-    val walkModeToVehicle: Map[BeamMode, StreetVehicle] = if (isRouteForPerson) Map(WALK -> profileRequestToVehicles.originalProfileModeToVehicle(WALK).head) else Map()
+      val isRouteForPerson = routingRequestTripInfo.streetVehicles.exists(_.mode == WALK)
 
-    var embodiedTrips: Vector[EmbodiedBeamTrip] = Vector()
-    originalResponse.trips.zipWithIndex.filter(_._1.accessMode == WALK).foreach { trip =>
-      embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle, walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
-    }
+      val profileRequestToVehicles: ProfileRequestToVehicles = if (isRouteForPerson) {
+        buildRequestsForPerson(routingRequestTripInfo)
+      } else {
+        buildRequestsForNonPerson(routingRequestTripInfo)
+      }
+      val originalResponse = buildResponse(pointToPointQuery.getPlan(profileRequestToVehicles.originalProfile), isRouteForPerson)
+      routingSegment.finish()
 
-    profileRequestToVehicles.originalProfileModeToVehicle.keys.foreach { mode =>
-      val streetVehicles = profileRequestToVehicles.originalProfileModeToVehicle(mode)
-      originalResponse.trips.zipWithIndex.filter(_._1.accessMode == mode).foreach { trip =>
-        streetVehicles.foreach { veh: StreetVehicle =>
-          embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle ++ Map(mode -> veh), walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
+      val walkModeToVehicle: Map[BeamMode, StreetVehicle] = if (isRouteForPerson) Map(WALK -> profileRequestToVehicles.originalProfileModeToVehicle(WALK).head) else Map()
+
+      var embodiedTrips: Vector[EmbodiedBeamTrip] = Vector()
+      originalResponse.trips.zipWithIndex.filter(_._1.accessMode == WALK).foreach { trip =>
+        embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle, walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
+      }
+
+      profileRequestToVehicles.originalProfileModeToVehicle.keys.foreach { mode =>
+        val streetVehicles = profileRequestToVehicles.originalProfileModeToVehicle(mode)
+        originalResponse.trips.zipWithIndex.filter(_._1.accessMode == mode).foreach { trip =>
+          streetVehicles.foreach { veh: StreetVehicle =>
+            embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle ++ Map(mode -> veh), walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
+          }
         }
       }
+
+      //TODO: process the walkOnly and vehicleCentered profiles and their responses here...
+
+      RoutingResponse(requestId, embodiedTrips)
     }
-
-    //TODO: process the walkOnly and vehicleCentered profiles and their responses here...
-
-    RoutingResponse(requestId, embodiedTrips)
   }
 
   protected def buildRequestsForNonPerson(routingRequestTripInfo: RoutingRequestTripInfo): ProfileRequestToVehicles = {
