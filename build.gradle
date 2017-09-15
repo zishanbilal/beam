@@ -276,7 +276,7 @@ task runMonitoring(dependsOn:[downloadAspectj], type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     jvmArgs = ['-javaagent:' + 'build/aspectjweaver-1.8.10.jar']
     environment "PWD", System.getProperty("user.dir")
-    args = ["--config", "test/input/application-sfbay/beam.conf"]
+    args = ["--config", "production/application-sfbay/beam.conf"]
 }
 
 task deleteSf {

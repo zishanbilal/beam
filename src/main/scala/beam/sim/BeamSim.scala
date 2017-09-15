@@ -2,6 +2,7 @@ package beam.sim
 
 import java.util.concurrent.TimeUnit
 
+import akka.actor.FSM.SubscribeTransitionCallBack
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
