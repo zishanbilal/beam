@@ -3,7 +3,7 @@ package beam.agentsim.scheduler
 import java.lang.Double
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.event.Logging
 import beam.agentsim.scheduler.BeamAgentScheduler._
 import com.google.common.collect.{Multimaps, SortedSetMultimap, TreeMultimap}
@@ -155,12 +155,10 @@ class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugE
       log.error(s"received unknown message: $msg")
   }
 
-  val monitorThread = if (log.isInfoEnabled) {
-    Option(context.system.scheduler.schedule(new FiniteDuration(10, TimeUnit.SECONDS), new FiniteDuration(10, TimeUnit.SECONDS), new Runnable {
-      override def run(): Unit = {
-        if (log.isInfoEnabled) {
-          log.info(s"\n\tnowInSeconds=$nowInSeconds,\n\tawaitingResponse.size=${awaitingResponse.size()},\n\ttriggerQueue.size=${triggerQueue.size},\n\ttriggerQueue.head=${triggerQueue.headOption}\n\tawaitingResponse.head=${awaitingToString}")
-        }
+  val monitorThread: Option[Cancellable] = if (log.isInfoEnabled) {
+    Option(context.system.scheduler.schedule(new FiniteDuration(10, TimeUnit.SECONDS), new FiniteDuration(10, TimeUnit.SECONDS), () => {
+      if (log.isInfoEnabled) {
+        log.info(s"\n\tnowInSeconds=$nowInSeconds,\n\tawaitingResponse.size=${awaitingResponse.size()},\n\ttriggerQueue.size=${triggerQueue.size},\n\ttriggerQueue.head=${triggerQueue.headOption}\n\tawaitingResponse.head=$awaitingToString")
       }
     }))
   } else {
@@ -172,15 +170,9 @@ class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugE
       "empty"
     } else {
       if (debugEnabled) {
-        awaitingResponse.synchronized(
-          s"${awaitingResponseVerbose.get(JavaConverters.asScalaSet(awaitingResponseVerbose.keySet()).head)}}"
-        )
+        s"${awaitingResponseVerbose.get(JavaConverters.asScalaSet(awaitingResponseVerbose.keySet()).head)}}"
       } else {
-        awaitingResponse.synchronized(
-          awaitingResponseVerbose.synchronized(
-            s"${JavaConverters.asScalaSet(awaitingResponse.keySet()).head} ${awaitingResponse.get(JavaConverters.asScalaSet(awaitingResponse.keySet()).head)}}"
-          )
-        )
+        s"${JavaConverters.asScalaSet(awaitingResponse.keySet()).head} ${awaitingResponse.get(JavaConverters.asScalaSet(awaitingResponse.keySet()).head)}}"
       }
     }
   }
