@@ -3,12 +3,12 @@ package beam.agentsim.scheduler
 import java.lang.Double
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.event.Logging
 import beam.agentsim.scheduler.BeamAgentScheduler._
-import com.google.common.collect.{Multimaps, SortedSetMultimap, TreeMultimap}
+import com.google.common.collect.TreeMultimap
 
-import scala.collection.{JavaConverters, mutable}
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
@@ -60,8 +60,8 @@ object BeamAgentScheduler {
 class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugEnabled: Boolean = false) extends Actor {
   val log = Logging(context.system, this)
   var triggerQueue = new mutable.PriorityQueue[ScheduledTrigger]()
-  var awaitingResponse: SortedSetMultimap[java.lang.Double, java.lang.Long] = Multimaps.synchronizedSortedSetMultimap(TreeMultimap.create[java.lang.Double, java.lang.Long]())
-  var awaitingResponseVerbose: SortedSetMultimap[java.lang.Double, ScheduledTrigger] = Multimaps.synchronizedSortedSetMultimap(TreeMultimap.create[java.lang.Double, ScheduledTrigger]()) //com.google.common.collect.Ordering.natural(), com.google.common.collect.Ordering.arbitrary())
+  var awaitingResponse: TreeMultimap[java.lang.Double, java.lang.Long] = TreeMultimap.create[java.lang.Double, java.lang.Long]()
+  var awaitingResponseVerbose: TreeMultimap[java.lang.Double, ScheduledTrigger] = TreeMultimap.create[java.lang.Double, ScheduledTrigger]() //com.google.common.collect.Ordering.natural(), com.google.common.collect.Ordering.arbitrary())
   val triggerIdToTick: mutable.Map[Long, Double] = scala.collection.mutable.Map[Long, java.lang.Double]()
   val triggerIdToScheduledTrigger: mutable.Map[Long, ScheduledTrigger] = scala.collection.mutable.Map[Long, ScheduledTrigger]()
   private var idCount: Long = 0L
@@ -96,7 +96,7 @@ class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugE
       if (nowInSeconds >= 13547) {
         val i = 0
       }
-      if (awaitingResponse.isEmpty || nowInSeconds - JavaConverters.asScalaSet(awaitingResponse.keySet()).head + 1 < maxWindow) {
+      if (awaitingResponse.isEmpty || nowInSeconds - awaitingResponse.keySet().first() + 1 < maxWindow) {
         while (triggerQueue.nonEmpty && triggerQueue.head.triggerWithId.trigger.tick <= nowInSeconds) {
           val scheduledTrigger = this.triggerQueue.dequeue
           val triggerWithId = scheduledTrigger.triggerWithId
@@ -111,7 +111,7 @@ class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugE
         if (nowInSeconds > 0 && nowInSeconds % 1800 == 0) {
           log.info("Hour " + nowInSeconds / 3600.0 + " completed.")
         }
-        if (awaitingResponse.isEmpty || (nowInSeconds + 1) - JavaConverters.asScalaSet(awaitingResponse.keySet()).head + 1 < maxWindow) {
+        if (awaitingResponse.isEmpty || (nowInSeconds + 1) - awaitingResponse.keySet().first() + 1 < maxWindow) {
           self ! DoSimStep(nowInSeconds + 1.0)
         } else {
           Thread.sleep(10)
@@ -155,10 +155,16 @@ class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugE
       log.error(s"received unknown message: $msg")
   }
 
-  val monitorThread: Option[Cancellable] = if (log.isInfoEnabled) {
-    Option(context.system.scheduler.schedule(new FiniteDuration(10, TimeUnit.SECONDS), new FiniteDuration(10, TimeUnit.SECONDS), () => {
-      if (log.isInfoEnabled) {
-        log.info(s"\n\tnowInSeconds=$nowInSeconds,\n\tawaitingResponse.size=${awaitingResponse.size()},\n\ttriggerQueue.size=${triggerQueue.size},\n\ttriggerQueue.head=${triggerQueue.headOption}\n\tawaitingResponse.head=$awaitingToString")
+  val monitorThread = if (log.isInfoEnabled) {
+    Option(context.system.scheduler.schedule(new FiniteDuration(10, TimeUnit.SECONDS), new FiniteDuration(10, TimeUnit.SECONDS), new Runnable {
+      override def run(): Unit = {
+        if (log.isInfoEnabled) {
+          awaitingResponseVerbose.synchronized {
+            awaitingResponse.synchronized {
+              log.info(s"\n\tnowInSeconds=$nowInSeconds,\n\tawaitingResponse.size=${awaitingResponse.size()},\n\ttriggerQueue.size=${triggerQueue.size},\n\ttriggerQueue.head=${triggerQueue.headOption}\n\tawaitingResponse.head=${awaitingToString}")
+            }
+          }
+        }
       }
     }))
   } else {
@@ -170,10 +176,15 @@ class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugE
       "empty"
     } else {
       if (debugEnabled) {
-        s"${awaitingResponseVerbose.get(JavaConverters.asScalaSet(awaitingResponseVerbose.keySet()).head)}}"
+        awaitingResponseVerbose.synchronized(
+        s"${awaitingResponseVerbose.get(awaitingResponseVerbose.keySet().first())}}"
+        )
       } else {
-        s"${JavaConverters.asScalaSet(awaitingResponse.keySet()).head} ${awaitingResponse.get(JavaConverters.asScalaSet(awaitingResponse.keySet()).head)}}"
+        awaitingResponse.synchronized(
+          s"${awaitingResponse.keySet().first()} ${awaitingResponse.get(awaitingResponse.keySet().first())}}"
+        )
       }
     }
   }
+
 }
