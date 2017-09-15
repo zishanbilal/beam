@@ -92,6 +92,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
 
     val printer  = actorSystem.actorOf(Props(new TracePrinter),"TracePrinter")
     Kamon.tracer.subscribe(printer)
+
     //    val printer = actorSystem.actorOf(Props(new StatsPrinterActor),"StatsPrinter")
     //    val stat = actorSystem.actorOf(Props(new MonitorStatisticsActor(period = 10 seconds, processMargin = 1000,
     //      storeSummaries = printer)))

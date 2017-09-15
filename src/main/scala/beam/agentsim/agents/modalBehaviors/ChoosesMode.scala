@@ -175,10 +175,7 @@ trait ChoosesMode extends BeamAgent[PersonData] with HasServices {
       //val departTime = BeamTime.within(stateData.data.currentActivity.getEndTime.toInt)
 
 //      beamServices.beamRouter ! RoutingRequest(currentActivity, nextAct, departTime, Vector(BeamMode.CAR, BeamMode.BIKE, BeamMode.WALK, BeamMode.TRANSIT), id)
-      Tracer.withNewContext(s"routing-trace${id}"){
         beamServices.beamRouter ! RoutingRequest(currentActivity, nextAct, departTime, Vector(BeamMode.TRANSIT), streetVehicles :+ bodyStreetVehicle, id)
-        logInfo(s"${Tracer.currentContext.startTimestamp}")
-      }
 //      beamServices.beamRouter ! RoutingRequest(currentActivity, nextAct, departTime, Vector(), streetVehicles :+ bodyStreetVehicle, id)
 
       //TODO parameterize search distance
@@ -191,8 +188,6 @@ trait ChoosesMode extends BeamAgent[PersonData] with HasServices {
      * Receive and store data needed for choice.
      */
     case Event(theRouterResult: RoutingResponse, info: BeamAgentInfo[PersonData]) =>
-      logDebug(s"${Tracer.currentContext.name}")
-      Tracer.currentContext.finish()
       routingResponse = Some(theRouterResult)
       completeChoiceIfReady()
     case Event(theRideHailingResult: RideHailingInquiryResponse, info: BeamAgentInfo[PersonData]) =>
@@ -202,9 +197,6 @@ trait ChoosesMode extends BeamAgent[PersonData] with HasServices {
      * Process ReservationReponses
      */
     case Event(ReservationResponse(requestId,Right(reservationConfirmation)),_) =>
-      if(id.toString.equals("1910-1")){
-        val i = 0
-      }
       awaitingReservationConfirmation = awaitingReservationConfirmation - requestId
       if(awaitingReservationConfirmation.isEmpty){
         scheduleDepartureWithValidatedTrip(pendingChosenTrip.get, reservationConfirmation.triggersToSchedule)

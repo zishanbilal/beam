@@ -1,25 +1,25 @@
 package beam.performance.kamon
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging}
 import kamon.trace.TraceInfo
 
-class TracePrinter extends Actor {
+class TracePrinter extends Actor with ActorLogging {
   def receive = {
     case traceInfo: TraceInfo =>
 
-      println("#################################################")
-      println("Trace Name: " + traceInfo.name)
-      println("Timestamp: " + traceInfo.elapsedTime)
-      println("Elapsed Time: " + traceInfo.elapsedTime)
-      println("Segments: ")
+      log.debug("#################################################")
+      log.debug("Trace Name: " + traceInfo.name)
+      log.debug("Timestamp: " + traceInfo.elapsedTime)
+      log.debug("Elapsed Time: " + traceInfo.elapsedTime)
+      log.debug("Segments: ")
 
       traceInfo.segments.foreach { segmentInfo =>
-        println("    ------------------------------------------")
-        println("    Name: " + segmentInfo.name)
-        println("    Category: " + segmentInfo.category)
-        println("    Library: " + segmentInfo.library)
-        println("    Timestamp: " + segmentInfo.timestamp)
-        println("    Elapsed Time: " + segmentInfo.elapsedTime)
+        log.debug("    ------------------------------------------")
+        log.debug("    Name: " + segmentInfo.name)
+        log.debug("    Category: " + segmentInfo.category)
+        log.debug("    Library: " + segmentInfo.library)
+        log.debug("    Timestamp: " + segmentInfo.timestamp)
+        log.debug("    Elapsed Time: " + segmentInfo.elapsedTime)
       }
   }
 }

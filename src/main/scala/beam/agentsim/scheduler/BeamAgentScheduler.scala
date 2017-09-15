@@ -71,7 +71,7 @@ class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugE
 
 
   override def postStop(): Unit = {
-    monitorThread.foreach(_.cancel())
+//    monitorThread.foreach(_.cancel())
   }
 
   def scheduleTrigger(triggerToSchedule: ScheduleTrigger): Unit = {
@@ -155,36 +155,42 @@ class BeamAgentScheduler(val stopTick: Double, val maxWindow: Double, val debugE
       log.error(s"received unknown message: $msg")
   }
 
-  val monitorThread = if (log.isInfoEnabled) {
-    Option(context.system.scheduler.schedule(new FiniteDuration(10, TimeUnit.SECONDS), new FiniteDuration(10, TimeUnit.SECONDS), new Runnable {
-      override def run(): Unit = {
-        if (log.isInfoEnabled) {
-          awaitingResponseVerbose.synchronized {
-            awaitingResponse.synchronized {
-              log.info(s"\n\tnowInSeconds=$nowInSeconds,\n\tawaitingResponse.size=${awaitingResponse.size()},\n\ttriggerQueue.size=${triggerQueue.size},\n\ttriggerQueue.head=${triggerQueue.headOption}\n\tawaitingResponse.head=${awaitingToString}")
-            }
-          }
-        }
-      }
-    }))
-  } else {
-    None
-  }
-
-  def awaitingToString: String = {
-    if (awaitingResponse.keySet().isEmpty) {
-      "empty"
-    } else {
-      if (debugEnabled) {
-        awaitingResponseVerbose.synchronized(
-        s"${awaitingResponseVerbose.get(awaitingResponseVerbose.keySet().first())}}"
-        )
-      } else {
-        awaitingResponse.synchronized(
-          s"${awaitingResponse.keySet().first()} ${awaitingResponse.get(awaitingResponse.keySet().first())}}"
-        )
-      }
-    }
-  }
+//  val monitorThread = if (log.isInfoEnabled) {
+//    Option(context.system.scheduler.schedule(new FiniteDuration(10, TimeUnit.SECONDS), new FiniteDuration(10, TimeUnit.SECONDS), new Runnable {
+//      override def run(): Unit = {
+//        if (log.isInfoEnabled) {
+//          awaitingResponseVerbose.synchronized {
+//            awaitingResponse.synchronized {
+//              log.info(s"\n\tnowInSeconds=$nowInSeconds,\n\tawaitingResponse.size=${awaitingResponse.size()},\n\ttriggerQueue.size=${triggerQueue.size},\n\ttriggerQueue.head=${triggerQueue.headOption}\n\tawaitingResponse.head=${awaitingToString}")
+//            }
+//          }
+//        }
+//      }
+//    }))
+//  } else {
+//    None
+//  }
+//
+//  def awaitingToString: String = {
+//    self.synchronized {
+//      if (awaitingResponse.keySet().isEmpty) {
+//        "empty"
+//      } else {
+//        if (debugEnabled) {
+//          awaitingResponse.synchronized(
+//            awaitingResponseVerbose.synchronized(
+//              s"${awaitingResponseVerbose.get(awaitingResponseVerbose.keySet().first())}}"
+//            )
+//          )
+//        } else {
+//          awaitingResponse.synchronized(
+//            awaitingResponseVerbose.synchronized(
+//              s"${awaitingResponse.keySet().first()} ${awaitingResponse.get(awaitingResponse.keySet().first())}}"
+//            )
+//          )
+//        }
+//      }
+//    }
+//  }
 
 }

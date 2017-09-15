@@ -41,6 +41,7 @@ import org.opentripplanner.routing.vertextype.TransitStop
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+
 class R5RoutingWorker(val beamServices: BeamServices) extends RoutingWorker {
   //TODO this needs to be inferred from the TransitNetwork or configured
   //  val localDateAsString: String = "2016-10-17"
@@ -179,22 +180,44 @@ class R5RoutingWorker(val beamServices: BeamServices) extends RoutingWorker {
   }
 
   override def calcRoute(requestId: Id[RoutingRequest], routingRequestTripInfo: RoutingRequestTripInfo, person: Person): RoutingResponse = {
-    Tracer.withNewContext("routing trace", autoFinish = true) {
       //Gets a response:
-      val routingSegment = Tracer.currentContext.startSegment("r5 trace", "routing", "router")
-        val pointToPointQuery = new PointToPointQuery(transportNetwork)
-
+    Tracer.withNewContext("RoutingTrace", autoFinish = true) {
+      //KAMON: Start p2pQuery segment
+      val p2pQuerySegment = Tracer.currentContext.startSegment("P2PQuery", "Routing", "Router")
+      val pointToPointQuery = new PointToPointQuery(transportNetwork)
+      p2pQuerySegment.finish()
+      //KAMON: Finish p2pQuery segment
       val isRouteForPerson = routingRequestTripInfo.streetVehicles.exists(_.mode == WALK)
 
-      val profileRequestToVehicles: ProfileRequestToVehicles = if (isRouteForPerson) {
-        buildRequestsForPerson(routingRequestTripInfo)
-      } else {
-        buildRequestsForNonPerson(routingRequestTripInfo)
-      }
-      val originalResponse = buildResponse(pointToPointQuery.getPlan(profileRequestToVehicles.originalProfile), isRouteForPerson)
-      routingSegment.finish()
 
+      val profileRequestToVehicles: ProfileRequestToVehicles = if (isRouteForPerson) {
+        // KAMON: Start Person Routing
+        val personRoutingSegment = Tracer.currentContext.startSegment("PersonRouting", "Routing", "Router")
+        val personRouting = buildRequestsForPerson(routingRequestTripInfo)
+        personRoutingSegment.finish()
+        // KAMON: Finish Person Routing
+        personRouting
+
+      } else {
+        // KAMON: Start NonPerson Routing
+        val nonPersonRoutingSegment = Tracer.currentContext.startSegment("NonPersonRouting", "Routing", "Router")
+        val nonPersonRouting = buildRequestsForNonPerson(routingRequestTripInfo)
+        nonPersonRoutingSegment.finish()
+        // KAMON: Finish NonPerson ROuting
+        nonPersonRouting
+
+      }
+
+      // KAMON: Start building response
+      val responseBuildingSegment = Tracer.currentContext.startSegment("ResponseBuilding", "Routing", "Router")
+      val originalResponse = buildResponse(pointToPointQuery.getPlan(profileRequestToVehicles.originalProfile), isRouteForPerson)
+      responseBuildingSegment.finish()
+      // KAMON: Finish building response
+
+      //KAMON: Start embodiment
+      val embodimentSegment = Tracer.currentContext.startSegment("EmbodimentSegment", "Routing", "Router")
       val walkModeToVehicle: Map[BeamMode, StreetVehicle] = if (isRouteForPerson) Map(WALK -> profileRequestToVehicles.originalProfileModeToVehicle(WALK).head) else Map()
+
 
       var embodiedTrips: Vector[EmbodiedBeamTrip] = Vector()
       originalResponse.trips.zipWithIndex.filter(_._1.accessMode == WALK).foreach { trip =>
@@ -211,7 +234,8 @@ class R5RoutingWorker(val beamServices: BeamServices) extends RoutingWorker {
       }
 
       //TODO: process the walkOnly and vehicleCentered profiles and their responses here...
-
+    embodimentSegment.finish()
+      // KAMON: Finish embodiment
       RoutingResponse(requestId, embodiedTrips)
     }
   }

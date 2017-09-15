@@ -195,7 +195,7 @@ dependencies {
     compile("io.kamon:kamon-akka-2.4_${scalaBinaryVersion}:0.6.7")
     compile("io.kamon:kamon-annotation_${scalaBinaryVersion}:0.6.7")
     compile("io.kamon:kamon-statsd_${scalaBinaryVersion}:0.6.7")
-//    compile("io.kamon:kamon-log-reporter_${scalaBinaryVersion}:0.6.7")
+    compile("io.kamon:kamon-log-reporter_${scalaBinaryVersion}:0.6.7")
 //    compile("io.kamon:kamon-system-metrics_${scalaBinaryVersion}:0.6.7")
 
 
