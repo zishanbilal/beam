@@ -4,11 +4,32 @@ import beam.router.RoutingModel.EmbodiedBeamTrip
 import beam.sim.{BeamServices, HasServices}
 import beam.agentsim.agents.choice.mode._
 
+import scala.annotation.tailrec
+import scala.util.Random
+
 /**
   * BEAM
   */
-trait ModeChoiceCalculator extends HasServices{
+trait ModeChoiceCalculator extends HasServices with Cloneable{
   def apply(alternatives: Vector[EmbodiedBeamTrip]): Option[EmbodiedBeamTrip]
+
+  @tailrec
+  final def chooseRandomAlternativeIndex(alternatives:Vector[EmbodiedBeamTrip]): Option[Int] ={
+    if(alternatives.nonEmpty){
+          val tmp = Random.nextInt(alternatives.size)
+          if(alternatives(tmp).legs.nonEmpty){
+            Some(tmp)
+          }else{
+            chooseRandomAlternativeIndex((alternatives.toSet - alternatives(tmp)).toVector)
+          }
+    } else{
+      None
+    }
+  }
+
+  override def clone(): ModeChoiceCalculator = {
+    this.clone()
+  }
 }
 
 object ModeChoiceCalculator {
@@ -29,7 +50,7 @@ object ModeChoiceCalculator {
       case "ModeChoiceUniformRandom" =>
         new ModeChoiceUniformRandom(beamServices)
       case "ModeChoiceMultinomialLogit" =>
-        new ModeChoiceMultinomialLogit(beamServices)
+        ModeChoiceMultinomialLogit(beamServices)
     }
   }
 }

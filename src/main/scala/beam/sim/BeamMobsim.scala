@@ -17,13 +17,13 @@ import scala.concurrent.Await
   */
 
 class BeamMobsim @Inject()(val beamServices: BeamServices) extends Mobsim {
-  private implicit val timeout = Timeout(5000, TimeUnit.SECONDS)
+  private implicit val timeout = Timeout(50000, TimeUnit.SECONDS)
 
   private val log = Logger.getLogger(classOf[BeamMobsim])
 
   override def run() = {
     log.info("Running BEAM Mobsim")
 
-    Await.result(beamServices.schedulerRef ? StartSchedule, timeout.duration)
+    Await.result(beamServices.schedulerRef ? StartSchedule(0), timeout.duration)
   }
 }
