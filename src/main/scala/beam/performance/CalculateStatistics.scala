@@ -1,7 +1,8 @@
 package beam.performance
 
 
-import concurrent.duration.Duration
+
+import scala.concurrent.duration.Duration
 
 case class StatisticsSummary(actorId: String,
                              entryTime: Long,

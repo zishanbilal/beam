@@ -7,7 +7,6 @@ import beam.agentsim.agents.vehicles.BeamVehicle.{BeamVehicleIdAndRef, StreetVeh
 import beam.agentsim.agents.vehicles._
 import beam.agentsim.agents.{InitializeTrigger, TransitDriverAgent}
 import beam.agentsim.scheduler.BeamAgentScheduler.ScheduleTrigger
-import beam.performance.MonitorActor
 import beam.router.BeamRouter.{RoutingRequest, RoutingRequestTripInfo, RoutingResponse}
 import beam.router.Modes.BeamMode.{BUS, CABLE_CAR, FERRY, RAIL, SUBWAY, TRAM, WALK}
 import beam.router.Modes.{BeamMode, _}
@@ -24,10 +23,8 @@ import com.conveyal.r5.api.ProfileResponse
 import com.conveyal.r5.api.util._
 import com.conveyal.r5.point_to_point.builder.PointToPointQuery
 import com.conveyal.r5.profile.ProfileRequest
-import com.conveyal.r5.transit.{RouteInfo, TransitLayer, TransportNetwork}
-import kamon.trace.Tracer
-import com.conveyal.r5.profile.{ProfileRequest, StreetMode}
 import com.conveyal.r5.transit.{RouteInfo, TransitLayer}
+import kamon.trace.Tracer
 import org.matsim.api.core.v01.Id
 import org.matsim.api.core.v01.population.Person
 import org.matsim.utils.objectattributes.attributable.Attributes
@@ -45,7 +42,7 @@ class R5RoutingWorker(val beamServices: BeamServices, val workerId: Int) extends
   //  val graphPathOutputsNeeded = beamServices.beamConfig.beam.outputs.writeGraphPathTraversals
   val graphPathOutputsNeeded = false
   val distanceThresholdToIgnoreWalking = beamServices.beamConfig.beam.agentsim.thresholdForWalkingInMeters // meters
-  var hasWarnedAboutLegPair = Set[Tuple2[Int,Int]]()
+  var hasWarnedAboutLegPair = Set[Tuple2[Int, Int]]()
 
   override def init: Unit = {
   }
@@ -101,16 +98,16 @@ class R5RoutingWorker(val beamServices: BeamServices, val workerId: Int) extends
             val fromStopId = tripPattern.stops(from)
             val toStopId = tripPattern.stops(to)
             val stopsInfo = TransitStopsInfo(fromStopId, toStopId)
-            if(tripVehId.toString.equals("SM:43|10748241:T1|15:00") && departureTimeFrom.toLong == 1500L){
-              val i =0
+            if (tripVehId.toString.equals("SM:43|10748241:T1|15:00") && departureTimeFrom.toLong == 1500L) {
+              val i = 0
             }
             val transitPath = if (isOnStreetTransit(mode)) {
-              transitCache.get((fromStopIdx,toStopIdx)).fold{
+              transitCache.get((fromStopIdx, toStopIdx)).fold {
                 val bp = beamPathBuilder.routeTransitPathThroughStreets(departureTimeFrom.toLong, fromStopIdx, toStopIdx, stopsInfo, duration)
-                transitCache += ((fromStopIdx,toStopIdx)->bp)
-              bp}
-              {x =>
-                beamPathBuilder.createFromExistingWithUpdatedTimes(x,departureTimeFrom,duration)
+                transitCache += ((fromStopIdx, toStopIdx) -> bp)
+                bp
+              } { x =>
+                beamPathBuilder.createFromExistingWithUpdatedTimes(x, departureTimeFrom, duration)
               }
             } else {
               val edgeIds = beamPathBuilder.resolveFirstLastTransitEdges(fromStopIdx, toStopIdx)
@@ -132,9 +129,9 @@ class R5RoutingWorker(val beamServices: BeamServices, val workerId: Int) extends
             }
             stopStopDepartTuple = (previousTransitStops.fromStopId, previousTransitStops.toStopId, previousBeamLeg.get.startTime)
             //            if(stopStopDepartTuple._1.eq("0") && stopStopDepartTuple._2.eq("23")){
-//            if (stopStopDepartTuple._1.equals("0") || stopStopDepartTuple._2.equals("0")) {
-//              val i = 0
-//            }
+            //            if (stopStopDepartTuple._1.equals("0") || stopStopDepartTuple._2.equals("0")) {
+            //              val i = 0
+            //            }
           }
           beamServices.transitLegsByStopAndDeparture += (stopStopDepartTuple -> BeamLegWithNext(previousBeamLeg.get, None))
         } else {
@@ -169,7 +166,7 @@ class R5RoutingWorker(val beamServices: BeamServices, val workerId: Int) extends
     val mode = Modes.mapTransitMode(TransitLayer.getTransitModes(route.route_type))
     val vehicleTypeId = Id.create(mode.toString.toUpperCase + "-" + route.agency_id, classOf[VehicleType])
 
-    val vehicleType = if (transitVehicles.getVehicleTypes.containsKey(vehicleTypeId)){
+    val vehicleType = if (transitVehicles.getVehicleTypes.containsKey(vehicleTypeId)) {
       transitVehicles.getVehicleTypes.get(vehicleTypeId);
     } else {
       log.info(s"no specific vehicleType available for mode and transit agency pair '${vehicleTypeId.toString})', using default vehicleType instead")
@@ -201,82 +198,62 @@ class R5RoutingWorker(val beamServices: BeamServices, val workerId: Int) extends
   }
 
   override def calcRoute(requestId: Id[RoutingRequest], routingRequestTripInfo: RoutingRequestTripInfo, person: Person): RoutingResponse = {
-      //Gets a response:
+    //KAMON: <== Start RoutingTrace context ==
     Tracer.withNewContext("RoutingTrace", autoFinish = true) {
-      //KAMON: Start p2pQuery segment
+      //KAMON: <== Start p2pQuery segment ==
       val p2pQuerySegment = Tracer.currentContext.startSegment("P2PQuery", "Routing", "Router")
       val pointToPointQuery = new PointToPointQuery(transportNetwork)
       p2pQuerySegment.finish()
-      //KAMON: Finish p2pQuery segment
+      //KAMON: == Finish p2pQuery segment ==|
       val isRouteForPerson = routingRequestTripInfo.streetVehicles.exists(_.mode == WALK)
 
-    val profileRequestToVehicles: ProfileRequestToVehicles = if(isRouteForPerson){
-      // KAMON: Start Person Routing
-        val personRoutingSegment = Tracer.currentContext.startSegment("PersonRouting", "Routing", "Router")
-        val personRouting =buildRequestsForPerson(routingRequestTripInfo)
-    personRoutingSegment.finish()
-        // KAMON: Finish Person Routing
-        personRouting} else {
-      // KAMON: Start NonPerson Routing
-        val nonPersonRoutingSegment = Tracer.currentContext.startSegment("NonPersonRouting", "Routing", "Router")
-        val nonPersonRouting =buildRequestsForNonPerson(routingRequestTripInfo)
-    nonPersonRoutingSegment.finish()
-        // KAMON: Finish NonPerson ROuting
-        nonPersonRouting
 
+      //KAMON: <== Start profRequest segment ==
+      val profileRequestSegment = Tracer.currentContext.startSegment("ProfileRequest", "Routing", "Router")
+      val profileRequestToVehicles: ProfileRequestToVehicles = if (isRouteForPerson) {
+        profileRequestSegment.rename("PersonProfileRequest")
+        buildRequestsForPerson(routingRequestTripInfo)
+      } else {
+        profileRequestSegment.rename("NonPersonProfileRequest")
+        buildRequestsForNonPerson(routingRequestTripInfo)
       }
+      //KAMON: == Finish profRequest segment  ==|
+      profileRequestSegment.finish()
 
-      // KAMON: Start building response
-      val responseBuildingSegment = Tracer.currentContext.startSegment("ResponseBuilding", "Routing", "Router")
-    val profileResponse = try {
-      Some(pointToPointQuery.getPlan(profileRequestToVehicles.originalProfile))
-    }catch{
-      case e: IllegalStateException =>
-        None
-    }
-    profileResponse match {
-      case Some(response) =>
-        val originalResponse = buildResponse(response, isRouteForPerson)responseBuildingSegment.finish()
-      // KAMON: Finish building response
+      val profileResponseSegment = Tracer.currentContext.startSegment("ProfileResponse", "Routing", "Router")
 
-      //KAMON: Start embodiment
-      val embodimentSegment = Tracer.currentContext.startSegment("EmbodimentSegment", "Routing", "Router")
-    val walkModeToVehicle: Map[BeamMode, StreetVehicle] = if (isRouteForPerson) Map(WALK -> profileRequestToVehicles.originalProfileModeToVehicle(WALK).head) else Map()
+      val profileResponse = try {
+        Some(pointToPointQuery.getPlan(profileRequestToVehicles.originalProfile))
+      } catch {
+        case e: IllegalStateException =>
+          None
+      }
+      profileResponseSegment.finish()
 
-    var embodiedTrips: Vector[EmbodiedBeamTrip] = Vector()
-    originalResponse.trips.zipWithIndex.filter(_._1.accessMode == WALK).foreach { trip =>
-      embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle, walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
-    }
+      profileResponse match {
+        case Some(response) =>
+          val originalResponse = buildResponse(response, isRouteForPerson)
+          val walkModeToVehicle: Map[BeamMode, StreetVehicle] = if (isRouteForPerson) Map(WALK -> profileRequestToVehicles.originalProfileModeToVehicle(WALK).head) else Map()
 
-      profileRequestToVehicles.originalProfileModeToVehicle.keys.foreach { mode =>
-        val streetVehicles = profileRequestToVehicles.originalProfileModeToVehicle(mode)
-        originalResponse.trips.zipWithIndex.filter(_._1.accessMode == mode).foreach { trip =>
-          streetVehicles.foreach { veh: StreetVehicle =>
-            embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle ++ Map(mode -> veh), walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
+          var embodiedTrips: Vector[EmbodiedBeamTrip] = Vector()
+          originalResponse.trips.zipWithIndex.filter(_._1.accessMode == WALK).foreach { trip =>
+            embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle, walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
           }
-        }
-      }
 
-      //TODO: process the walkOnly and vehicleCentered profiles and their responses here...
-    embodimentSegment.finish()
-      // KAMON: Finish embodiment
-      RoutingResponse(requestId, embodiedTrips)
-    }
-        profileRequestToVehicles.originalProfileModeToVehicle.keys.foreach { mode =>
-          val streetVehicles = profileRequestToVehicles.originalProfileModeToVehicle(mode)
-          originalResponse.trips.zipWithIndex.filter(_._1.accessMode == mode).foreach { trip =>
-            streetVehicles.foreach { veh: StreetVehicle =>
-              embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle ++ Map(mode -> veh), walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
+          profileRequestToVehicles.originalProfileModeToVehicle.keys.foreach { mode =>
+            val streetVehicles = profileRequestToVehicles.originalProfileModeToVehicle(mode)
+            originalResponse.trips.zipWithIndex.filter(_._1.accessMode == mode).foreach { trip =>
+              streetVehicles.foreach { veh: StreetVehicle =>
+                embodiedTrips = embodiedTrips :+ EmbodiedBeamTrip.embodyWithStreetVehicles(trip._1, walkModeToVehicle ++ Map(mode -> veh), walkModeToVehicle, originalResponse.tripFares(trip._2), beamServices)
+              }
             }
           }
-        }
-        if(embodiedTrips.isEmpty){
-          val i = 0
-        }
-        RoutingResponse(requestId, embodiedTrips)
-      case None =>
-        RoutingResponse(requestId, Vector())
+          RoutingResponse(requestId, embodiedTrips)
+        case None =>
+          RoutingResponse(requestId, Vector())
+      }
     }
+    //KAMON: == Finish RoutingTrace context ==|
   }
 
   protected def buildRequestsForNonPerson(routingRequestTripInfo: RoutingRequestTripInfo): ProfileRequestToVehicles = {
@@ -306,7 +283,7 @@ class R5RoutingWorker(val beamServices: BeamServices, val workerId: Int) extends
     profileRequest.fromLat = fromPosTransformed.getY
     profileRequest.toLon = toPosTransformed.getX
     profileRequest.toLat = toPosTransformed.getY
-        profileRequest.maxWalkTime = 2*60
+    profileRequest.maxWalkTime = 2 * 60
     profileRequest.maxCarTime = 3 * 60
     profileRequest.streetTime = Integer.MAX_VALUE
     //    profileRequest.maxBikeTime = 3*60
@@ -360,8 +337,8 @@ class R5RoutingWorker(val beamServices: BeamServices, val workerId: Int) extends
     val profileRequest = new ProfileRequest()
     //Set timezone to timezone of transport network
     profileRequest.zoneId = transportNetwork.getTimeZone
-    val fromPosTransformed =  beamServices.geo.snapToR5Edge(transportNetwork.streetLayer,beamServices.geo.utm2Wgs(routingRequestTripInfo.origin),10E3)
-    val toPosTransformed = beamServices.geo.snapToR5Edge(transportNetwork.streetLayer,beamServices.geo.utm2Wgs(routingRequestTripInfo.destination),10E3)
+    val fromPosTransformed = beamServices.geo.snapToR5Edge(transportNetwork.streetLayer, beamServices.geo.utm2Wgs(routingRequestTripInfo.origin), 10E3)
+    val toPosTransformed = beamServices.geo.snapToR5Edge(transportNetwork.streetLayer, beamServices.geo.utm2Wgs(routingRequestTripInfo.destination), 10E3)
     profileRequest.fromLon = fromPosTransformed.getX
     profileRequest.fromLat = fromPosTransformed.getY
     profileRequest.toLon = toPosTransformed.getX
@@ -570,9 +547,9 @@ class R5RoutingWorker(val beamServices: BeamServices, val workerId: Int) extends
               case Some(theNextLeg) =>
                 workingDepature = theNextLeg.startTime
               case None =>
-                if(!hasWarnedAboutLegPair.contains(Tuple2(stopPair(0),stopPair(1)))){
+                if (!hasWarnedAboutLegPair.contains(Tuple2(stopPair(0), stopPair(1)))) {
                   log.warning(s"Leg pair ${stopPair(0)} to ${stopPair(1)} at ${workingDepature} not found in beamServices.transitLegsByStopAndDeparture")
-                  hasWarnedAboutLegPair = hasWarnedAboutLegPair + Tuple2(stopPair(0),stopPair(1))
+                  hasWarnedAboutLegPair = hasWarnedAboutLegPair + Tuple2(stopPair(0), stopPair(1))
                 }
             }
           case None =>

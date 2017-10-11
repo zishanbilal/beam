@@ -1,7 +1,8 @@
 package beam.performance
 
-import akka.actor.{ ActorRef, Actor }
-import concurrent.duration.Duration
+import akka.actor.{Actor, ActorRef}
+
+import scala.concurrent.duration.Duration
 
 class MonitorStatisticsActor(period: Duration, processMargin: Long,
                              storeSummaries: ActorRef) extends Actor {

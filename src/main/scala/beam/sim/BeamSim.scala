@@ -18,9 +18,12 @@ import beam.agentsim.events.handling.BeamEventsLogger
 import beam.agentsim.scheduler.BeamAgentScheduler
 import beam.agentsim.scheduler.BeamAgentScheduler.ScheduleTrigger
 import beam.performance.kamon.TracePrinter
+import beam.physsim.jdeqsim.AgentSimToPhysSimPlanConverter
 import beam.physsim.{DummyPhysSim, InitializePhysSim}
-import beam.router.BeamRouter
-import beam.router.BeamRouter.{InitTransit, InitializeRouter}
+import beam.router.{BeamRouter, TransitInitCoordinator}
+import beam.router.BeamRouter.{InitTransit, InitializeRouter, TransitInited}
+import beam.sim.config.BeamLoggingSetup
+import beam.sim.monitoring.ErrorListener
 import com.google.inject.Inject
 import glokka.Registry
 import glokka.Registry.Created
