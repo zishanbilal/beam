@@ -29,12 +29,6 @@ import org.matsim.api.core.v01.events.PersonDepartureEvent
 import org.matsim.api.core.v01.population.Person
 import org.matsim.vehicles.Vehicle
 
-import scala.annotation.tailrec
-import scala.collection.concurrent.TrieMap
-import scala.concurrent.duration._
-import scala.util.Random
-import kamon.Kamon
-import kamon.trace.Tracer
 import scala.collection.mutable
 
 /**
@@ -210,10 +204,6 @@ trait ChoosesMode extends BeamAgent[PersonData] with HasServices {
       val nextAct = nextActivity.right.get
       val departTime = DiscreteTime(tick.toInt)
       //val departTime = BeamTime.within(stateData.data.currentActivity.getEndTime.toInt)
-
-//      beamServices.beamRouter ! RoutingRequest(currentActivity, nextAct, departTime, Vector(BeamMode.CAR, BeamMode.BIKE, BeamMode.WALK, BeamMode.TRANSIT), id)
-        beamServices.beamRouter ! RoutingRequest(currentActivity, nextAct, departTime, Vector(BeamMode.TRANSIT), streetVehicles :+ bodyStreetVehicle, id)
-//      beamServices.beamRouter ! RoutingRequest(currentActivity, nextAct, departTime, Vector(), streetVehicles :+ bodyStreetVehicle, id)
       currentTourPersonalVehicle match {
         case Some(personalVeh) =>
           beamServices.beamRouter ! RoutingRequest(currentActivity, nextAct, departTime, Vector(), streetVehicles.filter(_.id == personalVeh) :+ bodyStreetVehicle, id)

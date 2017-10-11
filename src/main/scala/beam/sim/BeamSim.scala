@@ -108,17 +108,6 @@ actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamSer
     val physSimFuture = beamServices.registry ? Registry.Register("physSim", DummyPhysSim.props(beamServices))
     beamServices.physSim = Await.result(physSimFuture, timeout.duration).asInstanceOf[Created].ref
     val physSimInitFuture = beamServices.physSim ? new InitializePhysSim()
-    val printer  = actorSystem.actorOf(Props(new TracePrinter),"TracePrinter")
-    Kamon.tracer.subscribe(printer)
-
-    //    val printer = actorSystem.actorOf(Props(new StatsPrinterActor),"StatsPrinter")
-    //    val stat = actorSystem.actorOf(Props(new MonitorStatisticsActor(period = 10 seconds, processMargin = 1000,
-    //      storeSummaries = printer)))
-    //    actorSystem.eventStream.subscribe(stat, classOf[MailboxStatistics])
-
-    val physSimFuture = services.registry ? Registry.Register("physSim", DummyPhysSim.props(services))
-    services.physSim = Await.result(physSimFuture, timeout.duration).asInstanceOf[Created].ref
-    val physSimInitFuture = services.physSim ? new InitializePhysSim()
     Await.result(physSimInitFuture, timeout.duration)
 */
 
