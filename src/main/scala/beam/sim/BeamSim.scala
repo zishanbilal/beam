@@ -4,7 +4,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.FSM.SubscribeTransitionCallBack
 import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.event.Logging
 import akka.pattern.ask
 import akka.util.Timeout
 import beam.agentsim.Resource.AssignManager
@@ -19,9 +18,9 @@ import beam.agentsim.scheduler.BeamAgentScheduler
 import beam.agentsim.scheduler.BeamAgentScheduler.ScheduleTrigger
 import beam.performance.kamon.TracePrinter
 import beam.physsim.jdeqsim.AgentSimToPhysSimPlanConverter
-import beam.physsim.{DummyPhysSim, InitializePhysSim}
-import beam.router.{BeamRouter, TransitInitCoordinator}
-import beam.router.BeamRouter.{InitTransit, InitializeRouter, TransitInited}
+import beam.router.BeamRouter
+import beam.router.BeamRouter.{InitTransit, InitializeRouter}
+import beam.router.gtfs.FareCalculator
 import beam.sim.config.BeamLoggingSetup
 import beam.sim.monitoring.ErrorListener
 import com.google.inject.Inject
@@ -85,7 +84,7 @@ actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamSer
 
     beamServices.modeChoiceCalculator = ModeChoiceCalculator(beamServices.beamConfig.beam.agentsim.agents.modalBehaviors.modeChoiceClass, beamServices)
 
-    val schedulerFuture = beamServices.registry ? Registry.Register("scheduler", Props(classOf[BeamAgentScheduler], beamServices, 3600 * 30.0, 300.0))
+    val schedulerFuture = beamServices.registry ? Registry.Register("scheduler", Props(classOf[BeamAgentScheduler], beamServices.beamConfig, 3600 * 30.0, 300.0))
     beamServices.schedulerRef = Await.result(schedulerFuture, timeout.duration).asInstanceOf[Created].ref
 
     // Before we initialize router we need to scale the transit vehicle capacities
@@ -99,7 +98,9 @@ actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamSer
       }
     }
 
-    val routerFuture = beamServices.registry ? Registry.Register("router", BeamRouter.props(beamServices))
+    val fareCalculator = actorSystem.actorOf(FareCalculator.props(beamServices.beamConfig.beam.routing.r5.directory))
+
+    val routerFuture = beamServices.registry ? Registry.Register("router", BeamRouter.props(beamServices, fareCalculator))
     beamServices.beamRouter = Await.result(routerFuture, timeout.duration).asInstanceOf[Created].ref
     val routerInitFuture = beamServices.beamRouter ? InitializeRouter
     Await.result(routerInitFuture, timeout.duration)
@@ -122,15 +123,11 @@ actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamSer
     currentIter = event.getIteration
     resetPop(event.getIteration)
     eventsManager.initProcessing()
-    // init transit and start movement
-    val coordinator = actorSystem.actorOf(Props(classOf[TransitInitCoordinator], beamServices.beamRouter, beamServices.beamConfig.beam.routing.workerNumber))
-    val response = Await.result( (coordinator ? InitTransit).mapTo[TransitInited], timeout.duration)
-    logger.info(s"Transit schedule has been initialized by workers: ${response.workerIds}")
+    Await.ready(beamServices.beamRouter ? InitTransit, timeout.duration)
+    logger.info(s"Transit schedule has been initialized")
   }
 
   override def notifyIterationEnds(event: IterationEndsEvent): Unit = {
-
-
     cleanupVehicle()
     cleanupHouseHolder()
     agentSimToPhysSimPlanConverter.startPhysSim()
@@ -158,7 +155,6 @@ actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamSer
   }
 
   override def notifyShutdown(event: ShutdownEvent): Unit = {
-
     actorSystem.stop(beamServices.schedulerRef)
     actorSystem.terminate()
     Kamon.shutdown()

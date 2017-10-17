@@ -2,11 +2,10 @@ package beam.router
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props, Stash, Terminated}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Terminated}
 import akka.routing._
 import beam.agentsim.agents.PersonAgent
 import beam.agentsim.agents.vehicles.BeamVehicle.StreetVehicle
-import beam.performance.MonitorActor
 import beam.router.BeamRouter._
 import beam.router.Modes.BeamMode
 import beam.router.RoutingModel.{BeamTime, EmbodiedBeamTrip}
@@ -19,7 +18,7 @@ import org.matsim.core.trafficmonitoring.TravelTimeCalculator
 import scala.beans.BeanProperty
 
 
-class BeamRouter(services: BeamServices) extends Actor with Stash with ActorLogging {
+class BeamRouter(services: BeamServices, fareCalculator: ActorRef) extends Actor with Stash with ActorLogging  {
   var router: Router = _
   var networkCoordinator: ActorRef = _
   private var routerWorkers: Vector[Routee] = _
@@ -32,7 +31,7 @@ class BeamRouter(services: BeamServices) extends Actor with Stash with ActorLogg
     networkCoordinator = context.actorOf(NetworkCoordinator.props(services))
   }
 
-  override def receive = uninitialized
+  def receive = uninitialized
 
   // Uninitialized state
   def uninitialized: Receive = {
@@ -71,7 +70,7 @@ class BeamRouter(services: BeamServices) extends Actor with Stash with ActorLogg
     case w: RoutingRequest =>
       router.route(w, sender())
     case InitTransit =>
-      router.route(Broadcast(InitTransit), sender())
+      networkCoordinator.forward(InitTransit)
     case InitializeRouter =>
       log.debug("Router already initialized.")
       sender() ! RouterInitialized
@@ -80,7 +79,7 @@ class BeamRouter(services: BeamServices) extends Actor with Stash with ActorLogg
     case updateRequest: UpdateTravelTime =>
       log.info("Received TravelTimeCalculator")
       networkCoordinator ! updateRequest
-    case msg: Any => {
+    case msg => {
       log.info(s"Unknown message[$msg] received by Router.")
     }
   }
@@ -97,28 +96,9 @@ class BeamRouter(services: BeamServices) extends Actor with Stash with ActorLogg
   }
 
   private def createAndWatch(workerId: Int): ActorRef = {
-    val routerProps = RoutingWorker.getRouterProps(services.beamConfig.beam.routing.routerClass, services, workerId)
+    val routerProps = RoutingWorker.getRouterProps(services.beamConfig.beam.routing.routerClass, services, fareCalculator, workerId)
     val r = context.actorOf(routerProps, s"router-worker-$workerId")
     context watch r
-  }
-}
-
-class TransitInitCoordinator(router: ActorRef, private var workerCount: Int) extends Actor with ActorLogging {
-  private var transitInitSender: ActorRef = _
-  private var finishedWorkers: Map[ActorRef, Int] =  Map[ActorRef, Int]()
-
-  override def receive: Receive = {
-    case InitTransit =>
-      transitInitSender = sender()
-      router ! InitTransit
-    case TransitInited(workerId :: Nil) =>
-      val workerRef = sender()
-      finishedWorkers = finishedWorkers + ((workerRef, workerId))
-      if (workerCount == finishedWorkers.size) {
-        log.info(s"Received TransitInited response from workers $finishedWorkers ")
-        transitInitSender ! TransitInited(finishedWorkers.values.toList)
-        context.stop(self)
-      }
   }
 }
 
@@ -131,7 +111,7 @@ object BeamRouter {
   case object RouterInitialized
   case object RouterNeedInitialization
   case object InitTransit
-  case class TransitInited(workerIds: List[Int])
+  case object TransitInited
   case class UpdateTravelTime(travelTimeCalculator: TravelTimeCalculator)
 
   /**
@@ -183,5 +163,5 @@ object BeamRouter {
     }
   }
 
-  def props(beamServices: BeamServices) = Props(new BeamRouter(beamServices) with MonitorActor)
+  def props(beamServices: BeamServices, fareCalculator: ActorRef) = Props(classOf[BeamRouter], beamServices, fareCalculator)
 }
