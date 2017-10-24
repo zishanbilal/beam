@@ -13,8 +13,7 @@ git:
   lfs_skip_smudge: true
 
 before_install:
-  - git lfs env
-  - git pull
+  - git lfs pull
 
 script:
 #  - zip -r beam.zip build/libs/beam.jar test appspec.yml || true
