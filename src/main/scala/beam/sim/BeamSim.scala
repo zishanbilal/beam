@@ -98,7 +98,7 @@ actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamSer
       }
     }
 
-    val fareCalculator = actorSystem.actorOf(FareCalculator.props(beamServices.beamConfig.beam.routing.r5.directory))
+    val fareCalculator = new FareCalculator(beamServices.beamConfig.beam.routing.r5.directory)
 
     val routerFuture = beamServices.registry ? Registry.Register("router", BeamRouter.props(beamServices, fareCalculator))
     beamServices.beamRouter = Await.result(routerFuture, timeout.duration).asInstanceOf[Created].ref
@@ -122,7 +122,7 @@ actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamSer
   override def notifyIterationStarts(event: IterationStartsEvent): Unit = {
     currentIter = event.getIteration
     resetPop(event.getIteration)
-    eventsManager.initProcessing()
+//    eventsManager.initProcessing()
     Await.ready(beamServices.beamRouter ? InitTransit, timeout.duration)
     logger.info(s"Transit schedule has been initialized")
   }
@@ -155,6 +155,7 @@ actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamSer
   }
 
   override def notifyShutdown(event: ShutdownEvent): Unit = {
+    actorSystem.stop(eventSubscriber)
     actorSystem.stop(beamServices.schedulerRef)
     actorSystem.terminate()
     Kamon.shutdown()
