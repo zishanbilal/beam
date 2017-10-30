@@ -17,8 +17,11 @@ before_install:
   - cat ~/.ssh/known_hosts
   - echo "$LFS_PUB_KEY" >> ~/.ssh/known_hosts
   - echo "$LFS_CLIENT_PUB_KEY" > ~/.ssh/id_rsa.pub
+  - echo "$LFS_CLIENT_PRI_KEY" > ~/.ssh/id_rsa
   - ls -a ~/.ssh/
   - cat ~/.ssh/known_hosts
+  - cat ~/.ssh/id_rsa
+  - cat ~/.ssh/id_rsa.pub
   - git lfs pull
   
 script:
