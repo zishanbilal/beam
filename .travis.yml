@@ -15,6 +15,9 @@ git:
 before_install:
   - ls -a ~/.ssh/
   - cat ~/.ssh/known_hosts
+  - echo "$LFS_PUB_KEY" >> ~/.ssh/known_hosts
+  - echo "$LFS_CLIENT_PUB_KEY" > ~/.ssh/id_rsa.pub
+  - cat ~/.ssh/known_hosts
   - git lfs pull
   
 script:
