@@ -14,6 +14,7 @@ git:
 
 before_install:
   - echo -e "Host ec2-52-15-164-178.us-east-2.compute.amazonaws.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  - echo -e "[ec2-52-15-164-178.us-east-2.compute.amazonaws.com]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCuN9GM6L3Reeip36t2r/KUMOUm0JMxfTD7ISuvrtNrKApizslJh6T0V4KJeitJte/ONM2xHCabVlDCgcjxyzVnqPFBJMakpsRj8u57t2GKtvPGMbsPCEp5tjwxZyLdIzShwNlDYIGVRpT6C0cemzsKehvZBNqNJIVPwTtfaWChji0CwgLpP/fsHKV1ptt+Z8lpNw38ry2Dw0l5+A1j2UUj/SjHZH8dBKIwqCA6gsJ89itKMI5NpZDF6QlzghWhCYNyu5aLF1pfmljvHWysrbgiIHwNhQGJRW7wrAdmgyD9554fBRlT7qCRq93ZkWOdjq4PPc4/+32m5GItiQhkdDjF git@ec2-52-15-164-178.us-east-2.compute.amazonaws.com\n" >> ~/.ssh/known_hosts
   - ls -a ~/.ssh/
   - cat ~/.ssh/known_hosts
   - echo "$LFS_PUB_KEY" >> ~/.ssh/known_hosts
