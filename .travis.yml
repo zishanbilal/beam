@@ -13,6 +13,7 @@ git:
   lfs_skip_smudge: true
 
 before_install:
+  - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
   - ls -a ~/.ssh/
   - cat ~/.ssh/known_hosts
   - echo "$LFS_PUB_KEY" >> ~/.ssh/known_hosts
