@@ -13,6 +13,7 @@ git:
   lfs_skip_smudge: true
 
 before_install:
+  - ls -a ~/.ssh/
   - git lfs pull
   
 script:
