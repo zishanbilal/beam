@@ -10,8 +10,6 @@ import akka.event.{ActorEventBus, LookupClassification}
   */
 
 object AgentsimEventsBus{
-  case class AddEventSubscriber(ref: ActorRef)
-  case class RemoveEventSubscriber(ref: ActorRef)
   case class MatsimEvent(wrappedEvent:org.matsim.api.core.v01.events.Event)
 
   implicit def matsimEvent[T<:org.matsim.api.core.v01.events.Event](ev:T): MatsimEvent ={

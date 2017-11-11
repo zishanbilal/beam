@@ -51,7 +51,6 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[BeamSim])
   var eventSubscriber: ActorRef = _
-  var eventsManager: EventsManager = _
   var writer: BeamEventsLogger = _
   var currentIter = 0
   var agentSimToPhysSimPlanConverter: AgentSimToPhysSimPlanConverter = new AgentSimToPhysSimPlanConverter(beamServices)
@@ -61,8 +60,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
 
   override def notifyStartup(event: StartupEvent): Unit = {
     actorSystem.eventStream.setLogLevel(BeamLoggingSetup.log4jLogLevelToAkka(beamServices.beamConfig.beam.outputs.logging.beam.logLevel))
-    eventsManager = beamServices.matsimServices.getEvents
-    eventSubscriber = actorSystem.actorOf(Props(classOf[EventsSubscriber], eventsManager), EventsSubscriber.SUBSCRIBER_NAME)
+    eventSubscriber = actorSystem.actorOf(Props(classOf[EventsSubscriber], beamServices.matsimServices.getEvents), EventsSubscriber.SUBSCRIBER_NAME)
 
     subscribe(ActivityEndEvent.EVENT_TYPE)
     subscribe(ActivityStartEvent.EVENT_TYPE)
