@@ -1,4 +1,4 @@
-package beam.utils;
+package beam.playground.routing;
 
 import java.util.Collection;
 import java.util.function.Consumer;
