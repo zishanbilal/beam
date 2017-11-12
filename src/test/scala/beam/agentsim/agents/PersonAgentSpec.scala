@@ -8,8 +8,7 @@ import akka.pattern.ask
 import akka.testkit.{EventFilter, ImplicitSender, TestActorRef, TestFSMRef, TestKit}
 import akka.util.Timeout
 import beam.agentsim.agents.PersonAgent._
-import beam.agentsim.agents.modalBehaviors.ModeChoiceCalculator
-import beam.agentsim.events.{AgentsimEventsBus, EventsSubscriber}
+import beam.agentsim.events.EventsManagerActor
 import beam.agentsim.scheduler.BeamAgentScheduler
 import beam.agentsim.scheduler.BeamAgentScheduler.{ScheduleTrigger, SchedulerProps, StartSchedule}
 import beam.sim.BeamServices
@@ -38,13 +37,11 @@ class PersonAgentSpec extends TestKit(ActorSystem("testsystem"))
   with MustMatchers with FunSpecLike with ImplicitSender with MockitoSugar {
 
   private implicit val timeout = Timeout(60, TimeUnit.SECONDS)
-  private val agentSimEventsBus = new AgentsimEventsBus
   val config = BeamConfig(ConfigFactory.parseFile(new File("test/input/beamville/beam.conf")).resolve())
 
   val services: BeamServices = {
 
     val theServices  = mock[BeamServices]
-    when(theServices.agentSimEventsBus).thenReturn(agentSimEventsBus)
     when(theServices.householdRefs).thenReturn(collection.concurrent.TrieMap[Id[Household], ActorRef]())
     when(theServices.beamConfig).thenReturn(config)
 //    when(theServices.modeChoiceCalculator).thenReturn(ModeChoiceCalculator(config.beam.agentsim.agents.modalBehaviors.modeChoiceClass, theServices));
@@ -91,9 +88,9 @@ class PersonAgentSpec extends TestKit(ActorSystem("testsystem"))
 
       val houseIdDummy = Id.create("dummy",classOf[Household])
       val events: EventsManager = EventsUtils.createEventsManager()
-      val eventSubscriber: ActorRef = TestActorRef(new EventsSubscriber(events), "events-subscriber1")
+      val eventSubscriber: ActorRef = TestActorRef(new EventsManagerActor(events), "events-subscriber1")
       val actEndDummy = new ActivityEndEvent(0, Id.createPersonId(0), Id.createLinkId(0), Id.create(0, classOf[ActivityFacility]), "dummy")
-      agentSimEventsBus.subscribe(eventSubscriber, ActivityEndEvent.EVENT_TYPE)
+      system.eventStream.subscribe(eventSubscriber, classOf[ActivityEndEvent])
 
       val plan = PopulationUtils.getFactory.createPlan()
       val homeActivity = PopulationUtils.createActivityFromLinkId("home", Id.createLinkId(1))
@@ -117,10 +114,10 @@ class PersonAgentSpec extends TestKit(ActorSystem("testsystem"))
     // FIXME
     ignore("should be able to route legs"){
       val events: EventsManager = EventsUtils.createEventsManager()
-      val eventSubscriber: ActorRef = TestActorRef(new EventsSubscriber(events), "events-subscriber2")
+      val eventSubscriber: ActorRef = TestActorRef(new EventsManagerActor(events), "events-subscriber2")
       val actEndDummy = new ActivityEndEvent(0, Id.createPersonId(0), Id.createLinkId(0), Id.create(0, classOf[ActivityFacility]), "dummy")
       val houseIdDummy = Id.create("dummy",classOf[Household])
-      agentSimEventsBus.subscribe(eventSubscriber,ActivityEndEvent.EVENT_TYPE)
+      system.eventStream.subscribe(eventSubscriber, classOf[ActivityEndEvent])
 
       val plan = PopulationUtils.getFactory.createPlan()
       val homeActivity = PopulationUtils.createActivityFromLinkId("home", Id.createLinkId(1))
