@@ -1,22 +1,16 @@
 package beam.sim
 
-import beam.agentsim.events.handling.BeamEventsHandling
+import beam.agentsim.events.handling.BeamEventsLogger
 import beam.sim.config.{BeamConfig, BeamLoggingSetup, ConfigModule}
-import beam.sim.modules.{AgentsimModule, BeamAgentModule, UtilsModule}
 import beam.sim.controler.corelisteners.{BeamControllerCoreListenersModule, BeamPrepareForSimImpl}
-import beam.sim.controler.BeamControler
+import beam.sim.modules.{BeamAgentModule, UtilsModule}
 import beam.utils.FileUtils
 import beam.utils.reflection.ReflectionUtils
 import com.conveyal.r5.streets.StreetLayer
 import org.matsim.api.core.v01.Scenario
-import org.matsim.core.api.experimental.events.EventsManager
 import org.matsim.core.config.Config
 import org.matsim.core.controler._
-import org.matsim.core.events.{EventsUtils, ParallelEventsManagerImpl}
 import org.matsim.core.scenario.{ScenarioByInstanceModule, ScenarioUtils}
-import net.codingwell.scalaguice.InjectorExtensions._
-import org.matsim.core.api.experimental.events.EventsManager
-import org.matsim.core.events.EventsUtils
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
@@ -35,10 +29,9 @@ trait RunBeam {
         install(new controler.ControlerDefaultsModule)
         install(new BeamControllerCoreListenersModule)
 
-
         // Beam Inject below:
         install(new ConfigModule)
-        install(new AgentsimModule)
+        addControlerListenerBinding().to(classOf[BeamEventsLogger])
         install(new BeamAgentModule)
         install(new UtilsModule)
       }
@@ -50,8 +43,6 @@ trait RunBeam {
         // Beam -> MATSim Wirings
         bindMobsim().to(classOf[BeamMobsim]) //TODO: This will change
         addControlerListenerBinding().to(classOf[BeamSim])
-        bind(classOf[EventsManager]).toInstance(EventsUtils.createEventsManager())
-        bind(classOf[ControlerI]).to(classOf[BeamControler]).asEagerSingleton()
         mBeamConfig.foreach(beamConfig => bind(classOf[BeamConfig]).toInstance(beamConfig)) //Used for testing - if none passed, app will use factory BeamConfig
       }
     }))
