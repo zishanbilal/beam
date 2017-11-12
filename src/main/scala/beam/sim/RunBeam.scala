@@ -2,7 +2,6 @@ package beam.sim
 
 import beam.agentsim.events.handling.BeamEventsLogger
 import beam.sim.config.{BeamConfig, BeamLoggingSetup, ConfigModule}
-import beam.sim.controler.corelisteners.{BeamControllerCoreListenersModule, BeamPrepareForSimImpl}
 import beam.sim.modules.{BeamAgentModule, UtilsModule}
 import beam.utils.FileUtils
 import beam.utils.reflection.ReflectionUtils
@@ -10,6 +9,7 @@ import com.conveyal.r5.streets.StreetLayer
 import org.matsim.api.core.v01.Scenario
 import org.matsim.core.config.Config
 import org.matsim.core.controler._
+import org.matsim.core.controler.corelisteners.ControlerDefaultCoreListenersModule
 import org.matsim.core.scenario.{ScenarioByInstanceModule, ScenarioUtils}
 
 import scala.collection.JavaConverters._
@@ -21,23 +21,27 @@ trait RunBeam {
     * mBeamConfig optional parameter is used to add custom BeamConfig instance to application injector
     */
   def beamInjector(scenario: Scenario,  matSimConfig: Config,mBeamConfig: Option[BeamConfig] = None): com.google.inject.Injector =
-    org.matsim.core.controler.Injector.createInjector(matSimConfig, AbstractModule.`override`(ListBuffer(new AbstractModule() {
-      override def install(): Unit = {
-        // MATSim defaults
-        install(new NewControlerModule)
-        install(new ScenarioByInstanceModule(scenario))
-        install(new controler.ControlerDefaultsModule)
-        install(new BeamControllerCoreListenersModule)
-
-        // Beam Inject below:
-        install(new ConfigModule)
-        install(new BeamAgentModule)
-        install(new UtilsModule)
+    org.matsim.core.controler.Injector.createInjector(matSimConfig, AbstractModule.`override`(ListBuffer(
+      new AbstractModule() {
+        override def install() = {
+          install(new NewControlerModule())
+          install(new ControlerDefaultCoreListenersModule())
+          install(new ControlerDefaultsModule())
+          install(new ScenarioByInstanceModule(scenario))
+          install(new ConfigModule())
+          install(new BeamAgentModule())
+          install(new UtilsModule())
+        }
       }
-    }).asJava, new AbstractModule() {
+    ).asJava, new AbstractModule() {
       override def install(): Unit = {
+
         // Override MATSim Defaults
-        bind(classOf[PrepareForSim]).to(classOf[BeamPrepareForSimImpl])
+        bind(classOf[PrepareForSim]).toInstance(new PrepareForSim {
+          override def run(): Unit = {
+            // Do nothing
+          }
+        })
 
         // Beam -> MATSim Wirings
         bindMobsim().to(classOf[BeamMobsim]) //TODO: This will change
