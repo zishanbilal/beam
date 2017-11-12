@@ -38,7 +38,7 @@ public class BeamEventsLogger implements IterationStartsListener, IterationEndsL
     Multimap<Class, String> eventFieldsToDropWhenShort = ArrayListMultimap.create();
     private Multimap<Class, String> eventFieldsToAddWhenVerbose = ArrayListMultimap.create();
 
-    @javax.inject.Inject
+    @Inject
     BeamEventsLogger(BeamServices beamServices, EventsManager eventsManager) {
 
         this.beamServices = beamServices;

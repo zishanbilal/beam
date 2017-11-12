@@ -49,7 +49,6 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
                        ) extends StartupListener with IterationStartsListener with IterationEndsListener with ShutdownListener {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[BeamSim])
-  var writer: BeamEventsLogger = _
   var currentIter = 0
   var agentSimToPhysSimPlanConverter: AgentSimToPhysSimPlanConverter = new AgentSimToPhysSimPlanConverter(beamServices)
   var rideHailingAgents: Seq[ActorRef] = Nil

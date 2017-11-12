@@ -31,7 +31,6 @@ trait RunBeam {
 
         // Beam Inject below:
         install(new ConfigModule)
-        addControlerListenerBinding().to(classOf[BeamEventsLogger])
         install(new BeamAgentModule)
         install(new UtilsModule)
       }
@@ -43,6 +42,7 @@ trait RunBeam {
         // Beam -> MATSim Wirings
         bindMobsim().to(classOf[BeamMobsim]) //TODO: This will change
         addControlerListenerBinding().to(classOf[BeamSim])
+        addControlerListenerBinding().to(classOf[BeamEventsLogger])
         mBeamConfig.foreach(beamConfig => bind(classOf[BeamConfig]).toInstance(beamConfig)) //Used for testing - if none passed, app will use factory BeamConfig
       }
     }))
