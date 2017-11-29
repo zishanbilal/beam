@@ -6,6 +6,7 @@ import java.util.{Collections, UUID}
 
 import akka.actor.Status.Success
 import akka.actor.{Actor, ActorLogging, Identify, Props, Stash}
+import akka.event.LoggingReceive
 import akka.pattern._
 import akka.util.Timeout
 import beam.agentsim.agents.vehicles.BeamVehicle.{BeamVehicleIdAndRef, StreetVehicle}
@@ -45,7 +46,7 @@ class BeamRouter(services: BeamServices, transitVehicles: Vehicles, fareCalculat
 
   private val routerWorker = context.actorOf(R5RoutingWorker.props(services, fareCalculator), "router-worker")
 
-  override def receive = {
+  override def receive = LoggingReceive {
     case InitTransit =>
       val transitSchedule = initTransit()
       routerWorker ! TransitInited(transitSchedule)
