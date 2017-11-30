@@ -14,7 +14,6 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.events.Event;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.*;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.config.ConfigUtils;
@@ -94,8 +93,8 @@ public class AgentSimToPhysSimPlanConverter implements BasicEventHandler {
                 jdeqsimActorREF = registerActor(registry, "JDEQSimActor", JDEQSimActor.props(jdeqSimConfigGroup,agentSimScenario, eventsManager,   this.services.beamRouter()));
             }
 
-            jdeqsimActorREF.tell(new Tuple<String,Population>(JDEQSimActor.START_PHYSSIM,jdeqSimScenario.getPopulation()), ActorRef.noSender());
-            eventHandlerActorREF.tell(EventManagerActor.REGISTER_JDEQSIM_REF, jdeqsimActorREF);
+            jdeqsimActorREF.tell(new Tuple<String,Population>(JDEQSimActor.START_PHYSSIM(), jdeqSimScenario.getPopulation()), ActorRef.noSender());
+            eventHandlerActorREF.tell(EventManagerActor.REGISTER_JDEQSIM_REF(), jdeqsimActorREF);
         } catch (Exception e) {
             e.printStackTrace();
         }
