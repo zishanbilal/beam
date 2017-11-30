@@ -11,6 +11,8 @@ import org.matsim.core.events.handler.EventHandler
 import org.matsim.core.trafficmonitoring.TravelTimeCalculator
 import java.util
 
+import akka.event.LoggingReceive
+
 
 object EventManagerActor {
   val LAST_MESSAGE = "lastMessage"
@@ -33,7 +35,7 @@ class EventManagerActor(var network: Network) extends Actor with Stash with Acto
     eventsManager.addHandler(travelTimeCalculator)
   }
 
-  override def receive = {
+  override def receive = LoggingReceive{
 
     case event: Event => eventsManager.processEvent(event)
     case s: String => {

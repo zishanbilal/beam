@@ -1,6 +1,7 @@
 package beam.physsim.jdeqsim.akka
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, UntypedActor}
+import akka.event.LoggingReceive
 import beam.router.BeamRouter
 import beam.utils.DebugLib
 import org.matsim.api.core.v01.Scenario
@@ -31,7 +32,7 @@ class JDEQSimActor(var config: JDEQSimConfigGroup, var agentSimScenario: Scenari
     events.finishProcessing()
   }
 
-  override def receive = {
+  override def receive = LoggingReceive{
 
     case tuple: Tuple[_, _] => {
 
