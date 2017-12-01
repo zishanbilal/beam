@@ -44,7 +44,7 @@ object AkkaMessageLogger{
     if (message.contains(MAP_KEY_RECEIVED_HANDLED)) {
 
       val mParts = message.split(" from ")
-      val dm = DebugMessage(mParts(0).split(MAP_KEY_RECEIVED_HANDLED)(1).trim, mParts(1), logSource, logClass.getName)
+      val dm = DebugMessage(mParts(0).split(MAP_KEY_RECEIVED_HANDLED)(1).trim, mParts(1), logSource, logClass.getName, sequenceNumber(MAP_KEY_RECEIVED_HANDLED))
 
       collect(dm)
     }
@@ -62,6 +62,16 @@ object AkkaMessageLogger{
   def printList(args: TraversableOnce[_]): Unit = {
     args.foreach(println)
   }
+
+  def sequenceNumber(key: String) = {
+
+    if(debugMessages.contains(key)){
+      val messageList = debugMessages(key)
+      messageList.size + 1
+    }else{
+      1
+    }
+  }
 }
 
-case class DebugMessage(message: String, sender: String, sourceActor: String, logActor: String)
+case class DebugMessage(message: String, sender: String, sourceActor: String, logActor: String, id: Int)
