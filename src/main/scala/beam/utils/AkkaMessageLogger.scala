@@ -21,11 +21,11 @@ class AkkaMessageLogger extends Actor {
     case Debug(logSource, logClass, message: String) =>
       //println(">>debug -> " + message)
       println(format(logSource, message, Console.GREEN))
-      AkkaMessageLogger.collect(logSource, logClass, message)
+      AkkaMessageLogger.logMessage(logSource, logClass, message)
     //mon ! format(logSource, message, Console.GREEN)
-    case AkkaMessageLogger.GET_LIST => {
+    case AkkaMessageLogger.GetList(filter: String) => {
       println("Printing the list before sending it back to " + sender.path + " - " + sender)
-      sender ! AkkaMessageLogger.debugMessages
+      sender ! AkkaMessageLogger.getMessagesWithString(filter)
     }
   }
 
@@ -34,23 +34,28 @@ class AkkaMessageLogger extends Actor {
 
 object AkkaMessageLogger{
 
+  case class GetList(filter: String)
+
   val MAP_KEY_RECEIVED_HANDLED: String = "received handled message"
-  case object GET_LIST
+  val debugMessages: mutable.Map[String, mutable.MutableList[AkkaDebugMessage]] = mutable.Map()
 
-  val debugMessages: mutable.Map[String, mutable.MutableList[DebugMessage]] = mutable.Map()
-
-
-  def collect(logSource: String, logClass: Class[_], message: String): Unit = {
+  def logMessage(logSource: String, logClass: Class[_], message: String): Unit = {
     if (message.contains(MAP_KEY_RECEIVED_HANDLED)) {
 
       val mParts = message.split(" from ")
-      val dm = DebugMessage(mParts(0).split(MAP_KEY_RECEIVED_HANDLED)(1).trim, mParts(1), logSource, logClass.getName, sequenceNumber(MAP_KEY_RECEIVED_HANDLED))
+      val keyWithMessageText = mParts(0)
+      val sender = mParts(1)
+      val keyAndText = keyWithMessageText.split(MAP_KEY_RECEIVED_HANDLED)
+      val key = keyAndText(0)
+      val text = keyAndText(1)
 
-      collect(dm)
+      val dm = AkkaDebugMessage(text, sender, logSource, logClass.getName, sequenceNumber(MAP_KEY_RECEIVED_HANDLED))
+
+      logMessage(dm)
     }
   }
 
-  def collect(m: DebugMessage): Unit = {
+  def logMessage(m: AkkaDebugMessage): Unit = {
 
     if(debugMessages.contains(MAP_KEY_RECEIVED_HANDLED) )
       debugMessages(MAP_KEY_RECEIVED_HANDLED) += m
@@ -59,8 +64,10 @@ object AkkaMessageLogger{
     }
   }
 
-  def printList(args: TraversableOnce[_]): Unit = {
-    args.foreach(println)
+  def getMessagesWithString(filter: String): mutable.MutableList[AkkaDebugMessage] = {
+
+    val list: mutable.MutableList[AkkaDebugMessage] = debugMessages.get(MAP_KEY_RECEIVED_HANDLED).get
+    list.filter((item: AkkaDebugMessage) => item.message.contains(filter))
   }
 
   def sequenceNumber(key: String) = {
@@ -72,6 +79,10 @@ object AkkaMessageLogger{
       1
     }
   }
+
+  def printList(args: TraversableOnce[_]): Unit = {
+    args.foreach(println)
+  }
 }
 
-case class DebugMessage(message: String, sender: String, sourceActor: String, logActor: String, id: Int)
+case class AkkaDebugMessage(message: String, sender: String, logSourceActor: String, logSourceActorClass: String, id: Int)

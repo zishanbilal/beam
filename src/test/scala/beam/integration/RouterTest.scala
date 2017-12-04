@@ -21,7 +21,7 @@ import beam.sim.config.{BeamConfig, BeamLoggingSetup, ConfigModule}
 import beam.sim.controler.BeamControler
 import beam.sim.controler.corelisteners.{BeamControllerCoreListenersModule, BeamPrepareForSimImpl}
 import beam.sim.modules.{AgentsimModule, BeamAgentModule, UtilsModule}
-import beam.utils.{AkkaMessageLogger, DebugMessage, FileUtils}
+import beam.utils.{AkkaMessageLogger, AkkaDebugMessage, FileUtils}
 import beam.utils.reflection.ReflectionUtils
 import com.conveyal.r5.streets.StreetLayer
 import glokka.Registry
@@ -122,13 +122,13 @@ class RouterTest
       println("messageCollector - From RouterTest -> " + messageCollector.path)
 
       // Test cases
-      messageCollector.tell(AkkaMessageLogger.GET_LIST, testActor)
+      messageCollector.tell(AkkaMessageLogger.GetList("startPhyssim"), testActor)
 
       "AkkaMessageLogger" must {
         "return a list of debug messages " in {
           within(50000 millis) {
             expectMsgPF() {
-              case l: mutable.MutableList[DebugMessage] => {
+              case l: mutable.MutableList[AkkaDebugMessage] => {
 
                 //log.info("DebugMessage List Received")
                 println("DebugMessage List Received: " + l.size)
