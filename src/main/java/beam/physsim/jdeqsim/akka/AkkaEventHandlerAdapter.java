@@ -3,10 +3,8 @@ package beam.physsim.jdeqsim.akka;
 import akka.actor.ActorRef;
 import beam.utils.DebugLib;
 import org.matsim.api.core.v01.events.Event;
-import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.events.handler.EventHandler;
-import org.matsim.core.utils.collections.Tuple;
 
 public class AkkaEventHandlerAdapter implements EventsManager {
 
@@ -49,7 +47,7 @@ public class AkkaEventHandlerAdapter implements EventsManager {
 
 	@Override
 	public void finishProcessing() {
-		eventHandlerActorREF.tell(EventManagerActor.LAST_MESSAGE, ActorRef.noSender());
+		eventHandlerActorREF.tell(EventManagerActor.LAST_MESSAGE(), ActorRef.noSender());
 	}
 
 }
