@@ -12,7 +12,9 @@ dependencies:
     - ./gradlew assemble
 
 test:
-  timeout: 1800
+  override:
+    - (./gradlew test -PdisablePreDex -Porg.gradle.parallel=false -Pcom.android.build.threadPoolSize=1 -Dorg.gradle.daemon=false --stacktrace):
+      timeout: 1800
 
 notify:
   webhooks:
