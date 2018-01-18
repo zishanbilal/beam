@@ -7,6 +7,7 @@ machine:
 dependencies:
   pre:
     - git lfs pull
+    - mkdir -p ~/.gradle && echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
   post:
     - ./gradlew assemble
 
