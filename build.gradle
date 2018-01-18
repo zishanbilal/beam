@@ -215,7 +215,11 @@ task spec(dependsOn: ['testClasses'], type: JavaExec) {
     args = ['-R', 'build/classes/scala/test', '-o']
     classpath = sourceSets.test.runtimeClasspath
 }
+
 test.dependsOn spec
+test {
+    maxHeapSize = "512m"
+}
 
 //////////////////////////////////////////////////////////////////////
 // Amazon WS task to run beam sim on Lambda
