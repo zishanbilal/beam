@@ -1,10 +1,11 @@
 package beam.agentsim.agents.vehicles
 
+import java.util.UUID
+
 import beam.agentsim.events.resources.ReservationErrorCode._
 import beam.agentsim.events.resources._
 import beam.agentsim.scheduler.BeamAgentScheduler.ScheduleTrigger
 import beam.router.RoutingModel.BeamLeg
-import com.eaio.uuid.UUIDGen
 import org.matsim.api.core.v01.Id
 import org.matsim.vehicles.Vehicle
 
@@ -12,8 +13,7 @@ import org.matsim.vehicles.Vehicle
   * @author dserdiuk
   */
 object Reservation {
-  def nextReservationId: Id[ReservationRequest] = Id.create(UUIDGen.createTime(UUIDGen.newTime()).toString,
-    classOf[ReservationRequest])
+  def nextReservationId: Id[ReservationRequest] = Id.create(UUID.randomUUID().toString, classOf[ReservationRequest])
 }
 
 case class ReservationRequest(requestId: Id[ReservationRequest], departFrom: BeamLeg, arriveAt: BeamLeg,

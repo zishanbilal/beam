@@ -1,5 +1,7 @@
 package beam.agentsim.agents.household
 
+import java.util.UUID
+
 import akka.actor.{ActorLogging, ActorRef, Props}
 import beam.agentsim.Resource.{CheckInResource, NotifyResourceIdle, NotifyResourceInUse}
 import beam.agentsim.ResourceManager.VehicleManager
@@ -10,7 +12,6 @@ import beam.agentsim.events.SpaceTime
 import beam.router.Modes.BeamMode.CAR
 import beam.router.RoutingModel.BeamPath
 import beam.sim.{BeamServices, HasServices}
-import com.eaio.uuid.UUIDGen
 import org.matsim.api.core.v01.population.{Person, Population}
 import org.matsim.api.core.v01.{Coord, Id}
 import org.matsim.core.api.experimental.events.EventsManager
@@ -42,7 +43,7 @@ object HouseholdActor {
   object MobilityStatusInquiry {
     // Smart constructor for MSI
     def mobilityStatusInquiry(personId: Id[Person]) =
-      MobilityStatusInquiry(Id.create(UUIDGen.createTime(UUIDGen.newTime()).toString, classOf[MobilityStatusInquiry])
+      MobilityStatusInquiry(Id.create(UUID.randomUUID().toString, classOf[MobilityStatusInquiry])
         , personId)
   }
 

@@ -5,8 +5,6 @@ import beam.agentsim.agents.modalBehaviors.ModeChoiceCalculator.AttributesOfIndi
 import beam.router.Modes.BeamMode.CAR
 import beam.router.RoutingModel.EmbodiedBeamTrip
 import beam.sim.BeamServices
-
-import scalaz.Scalaz._
 /**
   * BEAM
   */

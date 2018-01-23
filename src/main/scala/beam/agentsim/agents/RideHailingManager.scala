@@ -1,5 +1,6 @@
 package beam.agentsim.agents
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, Props}
@@ -23,7 +24,6 @@ import beam.router.Modes.BeamMode._
 import beam.router.RoutingModel
 import beam.router.RoutingModel.{BeamTime, BeamTrip}
 import beam.sim.{BeamServices, HasServices}
-import com.eaio.uuid.UUIDGen
 import com.google.common.cache.{Cache, CacheBuilder}
 import org.matsim.api.core.v01.{Coord, Id}
 import org.matsim.core.utils.collections.QuadTree
@@ -41,8 +41,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 object RideHailingManager {
   val log: Logger = LoggerFactory.getLogger(classOf[RideHailingManager])
 
-  def nextRideHailingInquiryId: Id[RideHailingInquiry] = Id.create(UUIDGen.createTime(UUIDGen.newTime()).toString,
-    classOf[RideHailingInquiry])
+  def nextRideHailingInquiryId: Id[RideHailingInquiry] = Id.create(UUID.randomUUID().toString, classOf[RideHailingInquiry])
 
   case class RideHailingInquiry(inquiryId: Id[RideHailingInquiry], customerId: Id[PersonAgent],
                                 pickUpLocation: Location, departAt: BeamTime, destination: Location)
