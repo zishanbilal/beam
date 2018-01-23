@@ -5,10 +5,10 @@ version := "1.0"
 scalaVersion := "2.12.4"
  
 resolvers ++= Seq(
+  "Geotools" at "http://download.osgeo.org/webdav/geotools",
   "Geotoolkit" at "http://maven.geotoolkit.org/",
   "JBoss" at "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases",
   "MATSim" at "http://dl.bintray.com/matsim/matsim",
-  "Geotools" at "http://download.osgeo.org/webdav/geotools",
   "Jitpack" at "https://jitpack.io",
   "Conveyal" at "http://maven.conveyal.com/",
   "java.net" at "http://download.java.net/maven/2/",
@@ -18,7 +18,7 @@ resolvers ++= Seq(
   "onebusaway" at "http://nexus.onebusaway.org/content/groups/public/",
   "axiomalaska" at "http://nexus.axiomalaska.com/nexus/content/repositories/public/"
 )
- 
+
 updateOptions := updateOptions.value.withGigahorse(false)
 updateConfiguration in updateSbtClassifiers := (updateConfiguration in updateSbtClassifiers).value.withMissingOk(true)
 
@@ -54,5 +54,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.4" % "test",
   "org.mockito" % "mockito-all" % "1.9.5" % "test"
 )
+
+excludeDependencies += "javax.media" % "jai_core"
 
 fork := true
