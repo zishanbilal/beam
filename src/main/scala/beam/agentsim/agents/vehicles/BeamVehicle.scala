@@ -33,8 +33,7 @@ import scala.util.{Failure, Random, Success, Try}
 class BeamVehicle(powerTrain: Powertrain,
                   initialMatsimVehicle: Vehicle,
                   initialMatsimAttributes: Option[ObjectAttributes],
-                  beamVehicleType: BeamVehicleType,
-                 )
+                  beamVehicleType: BeamVehicleType)
   extends Resource[BeamVehicle] {
   val log: Logger = Logger.getLogger(classOf[BeamVehicle])
 
