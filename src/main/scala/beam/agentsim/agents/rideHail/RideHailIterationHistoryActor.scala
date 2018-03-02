@@ -13,7 +13,7 @@ class HistoricWaitingTimes(){
 class RideHailIterationHistoryActor extends Actor{
   def receive = {
     case AddTNCHistoryData(_,_) =>  ??? // // receive message from TNCWaitingTimesCollector
-    case GetWaitingTimes() =>  ??? // received message from RideHailManager
+    case GetWaitingTimes() =>   // received message from RideHailManager
       sender() ! UpdateHistoricWaitingTimes(null)
     case _      =>  ???
   }

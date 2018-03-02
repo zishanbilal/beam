@@ -3,11 +3,11 @@ package beam.sim
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorSystem, Identify}
+import akka.actor.{ActorRef, ActorSystem, Identify, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import beam.agentsim.agents.modalBehaviors.ModeChoiceCalculator
-import beam.agentsim.agents.rideHail.{TNCWaitingTimesCollector}
+import beam.agentsim.agents.rideHail.{RideHailIterationHistoryActor, TNCWaitingTimesCollector}
 import beam.agentsim.infrastructure.TAZTreeMap
 import beam.analysis.plots.GraphsStatsAgentSimEventsListener
 import beam.analysis.plots.modality.ModalityStyleStats
@@ -42,6 +42,8 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
   private var expectedDisutilityHeatMapDataCollector: ExpectedMaxUtilityHeatMap = _
 
   private var tncWaitingTimes: TNCWaitingTimesCollector = _
+
+  private var rideHailIterationHistoryActorRef:ActorRef = _
 
   override def notifyStartup(event: StartupEvent): Unit = {
     beamServices.modeChoiceCalculatorFactory = ModeChoiceCalculator(beamServices.beamConfig.beam.agentsim.agents.modalBehaviors.modeChoiceClass, beamServices)
@@ -82,6 +84,9 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
 
     tncWaitingTimes = new TNCWaitingTimesCollector(eventsManager)
 
+    rideHailIterationHistoryActorRef=actorSystem.actorOf(Props(new RideHailIterationHistoryActor()),"RideHailIterationHistoryActor")
+
+    print()
   }
 
   override def notifyIterationEnds(event: IterationEndsEvent): Unit = {
@@ -90,7 +95,8 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
     ModalityStyleStats.processData(scenario.getPopulation(),event);
     ModalityStyleStats.buildModalityStyleGraph();
 
-    tncWaitingTimes.tellHistoryToRideHailIterationHistoryActor()
+    tncWaitingTimes.tellHistoryToRideHailIterationHistoryActor(rideHailIterationHistoryActorRef)
+
   }
 
   override def notifyShutdown(event: ShutdownEvent): Unit = {

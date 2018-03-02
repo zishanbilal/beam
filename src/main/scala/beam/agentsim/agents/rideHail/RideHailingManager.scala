@@ -37,9 +37,9 @@ import org.matsim.core.utils.geometry.CoordUtils
 import org.matsim.vehicles.Vehicle
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.Random
+import scala.util.{Failure, Random, Success}
 
 
 
@@ -65,6 +65,22 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
   val DefaultCostPerMinute = BigDecimal(beamServices.beamConfig.beam.agentsim.agents.rideHailing.defaultCostPerMinute)
   val radius: Double = 5000
   val selfTimerTimoutDuration=10*60 // TODO: set from config
+
+  private implicit val timeout = Timeout(50000, TimeUnit.SECONDS)
+
+  val rideHailIterationHistoryActorRef=context.actorSelection("akka://beam-actor-system/user/RideHailIterationHistoryActor")
+
+
+  //rideHailIterationHistoryActorRef ! GetWaitingTimes()
+  val future=rideHailIterationHistoryActorRef.ask(GetWaitingTimes())
+  val updateHistoricWaitingTimes=Await.ready(future, timeout.duration).value.get match {
+    case Success(history) => history.asInstanceOf[UpdateHistoricWaitingTimes]
+    case Failure(exception) => throw exception
+  }
+
+ //val updateHistoricWaitingTimes:UpdateHistoricWaitingTimes=future.
+  print()
+
 
   //TODO improve search to take into account time when available
   private val availableRideHailingAgentSpatialIndex = {
@@ -114,6 +130,9 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 
     case RegisterResource(vehId: Id[Vehicle]) =>
       resources.put(agentsim.vehicleId2BeamVehicleId(vehId), beamServices.vehicles(vehId))
+
+    case UpdateHistoricWaitingTimes(_) =>
+      print()
 
     case NotifyResourceIdle(vehId: Id[Vehicle], whenWhere) =>
       updateLocationOfAgent(vehId, whenWhere, false)
