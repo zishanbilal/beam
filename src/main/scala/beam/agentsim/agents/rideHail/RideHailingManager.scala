@@ -68,15 +68,17 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 
   private implicit val timeout = Timeout(50000, TimeUnit.SECONDS)
 
-  val rideHailIterationHistoryActorRef=context.actorSelection("akka://beam-actor-system/user/RideHailIterationHistoryActor")
+  val rideHailIterationHistoryActorRef = context.actorSelection("akka://beam-actor-system/user/RideHailIterationHistoryActor")
 
+  var updateHistoricWaitingTimes: UpdateHistoricWaitingTimes = _
 
-  //rideHailIterationHistoryActorRef ! GetWaitingTimes()
-  val future=rideHailIterationHistoryActorRef.ask(GetWaitingTimes())
-  val updateHistoricWaitingTimes=Await.ready(future, timeout.duration).value.get match {
-    case Success(history) => history.asInstanceOf[UpdateHistoricWaitingTimes]
-    case Failure(exception) => throw exception
-  }
+  rideHailIterationHistoryActorRef ! GetWaitingTimes()
+
+//  val future = rideHailIterationHistoryActorRef.ask(GetWaitingTimes())
+//  val updateHistoricWaitingTimes=Await.ready(future, timeout.duration).value.get match {
+//    case Success(history) => history.asInstanceOf[UpdateHistoricWaitingTimes]
+//    case Failure(exception) => throw exception
+//  }
 
  //val updateHistoricWaitingTimes:UpdateHistoricWaitingTimes=future.
   print()
@@ -109,7 +111,17 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
     ReservationResponse]()
   private var lockedVehicles = Set[Id[Vehicle]]()
 
-  override def receive: Receive = {
+
+  def receive = uninitialized
+
+  def uninitialized: Receive = {
+    case UpdateHistoricWaitingTimes(value) =>
+      updateHistoricWaitingTimes = UpdateHistoricWaitingTimes(value)
+      context.become(initialized)
+    case m => log.debug(s"Unknown message while uninitialized $m")
+  }
+
+  def initialized: Receive = {
     case NotifyIterationEnds() =>
       try {
         val graphSurgePricing: GraphSurgePricing = new GraphSurgePricing();
