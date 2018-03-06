@@ -82,7 +82,7 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
     expectedDisutilityHeatMapDataCollector = new ExpectedMaxUtilityHeatMap(eventsManager, scenario.getNetwork, event.getServices.getControlerIO, beamServices.beamConfig.beam.outputs.writeEventsInterval)
 
 
-    tncWaitingTimes = new TNCWaitingTimesCollector(eventsManager)
+    tncWaitingTimes = new TNCWaitingTimesCollector(eventsManager,scenario.getNetwork)
 
     rideHailIterationHistoryActorRef=actorSystem.actorOf(Props(new RideHailIterationHistoryActor()),"RideHailIterationHistoryActor")
 

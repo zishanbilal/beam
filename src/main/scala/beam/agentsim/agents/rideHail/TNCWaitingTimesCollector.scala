@@ -8,13 +8,16 @@ import akka.actor.ActorRef
 import beam.agentsim.events.{ModeChoiceEvent, PathTraversalEvent, SpaceTime}
 import org.matsim.api.core.v01.{Coord, Id}
 import org.matsim.api.core.v01.events.{Event, PersonEntersVehicleEvent}
+import org.matsim.api.core.v01.network.Network
 import org.matsim.api.core.v01.population.Person
 import org.matsim.core.api.experimental.events.EventsManager
 import org.matsim.core.events.handler.BasicEventHandler
 
-class TNCWaitingTimesCollector(eventsManager: EventsManager) extends BasicEventHandler {
+class TNCWaitingTimesCollector(eventsManager: EventsManager,matsimNetwork:Network) extends BasicEventHandler {
 
   eventsManager.addHandler(this)
+
+  val network=matsimNetwork
 
   val idlingListOfVehicles = new util.ArrayList[String]()
 //  val idlingEvents = new util.HashMap[String, util.List[WaitingEvent]]()
@@ -124,7 +127,6 @@ class TNCWaitingTimesCollector(eventsManager: EventsManager) extends BasicEventH
   }
 
   override def reset(iteration: Int): Unit = {
-    passengerWaitingEventsQueue
 
     for(i <- 1 to passengerWaitingEventsQueue.size){
       println(passengerWaitingEventsQueue.dequeue().location.time)
@@ -148,14 +150,13 @@ class TNCWaitingTimesCollector(eventsManager: EventsManager) extends BasicEventH
         val loc = modeChoiceEvent.getAttributes.get(ModeChoiceEvent.ATTRIBUTE_LOCATION).toString
         val waitingDuration = personEntersVehicleEvent.getTime - modeChoiceEvent.getTime
 
-        val coord = new Coord(0, 0)
+        val coord = network.getLinks.get(Id.createLinkId(loc)).getCoord
 
         val spaceTime = new SpaceTime(coord, time.toLong)
 
         val waitingEvent = WaitingEvent(spaceTime, waitingDuration)
 
-
-        passengerWaitingEventsQueue.enqueue()
+        passengerWaitingEventsQueue.enqueue(waitingEvent)
         modeChoiceEvents.remove(modeChoiceEvent.getPersonId)
       }
     }
