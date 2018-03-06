@@ -59,12 +59,33 @@ class TNCMultiIterationData(){
 
 
 
-def getWaitingEventsInRadius(waitingEvents: Set[WaitingEvent], radius:Double, endTime: Double, minRemainingWaitingDuration:Double): Set[WaitingEvent] ={
-  //convertSetToQuadTree(waitingEvents)
+  def getWaitingEventsInRadius(waitingEvents: mutable.PriorityQueue[WaitingEvent], referencePoint: Coord,  radius:Double, endTime: Double, minRemainingWaitingDuration:Double): Set[WaitingEvent] = {
 
+    var waitingEventSet = Set[WaitingEvent]()
 
-  null
-}
+    for (i <- 1 to waitingEvents.size){
+      val waitingEvent = waitingEvents.dequeue()
+
+      if(withinRadius(waitingEvent, referencePoint, radius) && (waitingEvent.location.time <= endTime) && (waitingEvent.waitingDuration >= minRemainingWaitingDuration)){
+        waitingEventSet += waitingEvent
+      }
+    }
+
+    waitingEventSet
+  }
+
+  def withinRadius(waitingEvent: WaitingEvent, source: Coord, radius: Double):Boolean = {
+
+    val distance = getDistance(source, waitingEvent.location.loc)
+
+    distance <= radius
+  }
+
+  def getDistance(source: Coord, destination: Coord): Double = {
+    val v1 = (destination.getX - source.getX) * (destination.getX - source.getX)
+    val v2 = (destination.getY - source.getY) * (destination.getY - source.getY)
+    Math.sqrt(v2 - v1)
+  }
 
   def convertSetToQuadTree(waitingEvents: Set[WaitingEvent]): QuadTree[WaitingEvent] ={
     null
