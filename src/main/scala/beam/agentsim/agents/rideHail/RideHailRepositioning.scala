@@ -11,9 +11,7 @@ import org.matsim.core.events.handler.BasicEventHandler
 
 /*
 
-class Force(startCoord,endCoord){
-  getVector();
-}
+
 
 def getForceAt(coordinate, time):Force{
   waitingLocations=getPreviousIteration.AtTime(time).getWaitingLocationsInRadius(coordinate, radius);
