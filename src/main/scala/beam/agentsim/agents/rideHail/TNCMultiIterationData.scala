@@ -15,7 +15,10 @@ class TNCMultiIterationData(){
   val tncHistoricData = new mutable.ListBuffer[TNCHistoryData]
 
 
-
+  def addHistoricData(data: TNCHistoryData): Unit ={
+    // TODO: refactor - use appropriate data structure
+    tncHistoricData.insert(0,data)
+  }
 
 
   def getForceVectorAtLocation(spaceTime: SpaceTime): ForceVector = {
