@@ -12,12 +12,12 @@ class TNCMultiIterationData(){
   val historyDecayFactor=0.5;
   val minDurationToConsiderTNCIdleInSeconds=600;
 
-  val tncHistoricData = new mutable.ListBuffer[TNCHistoryData]
+  var tncHistoricData = new mutable.ListBuffer[TNCHistoryData]
 
 
   def addHistoricData(data: TNCHistoryData): Unit ={
     // TODO: refactor - use appropriate data structure
-    tncHistoricData.insert(0,data)
+    tncHistoricData.prepend(data)
   }
 
 
@@ -31,7 +31,7 @@ class TNCMultiIterationData(){
     }
 
     if (tncHistoricData.size>maxHistoriySize)
-    tncHistoricData.dropRight(1)
+      tncHistoricData=tncHistoricData.dropRight(1)
 
     force
   }
@@ -78,14 +78,21 @@ def getWaitingEventsInRadius(waitingEvents: Set[WaitingEvent], radius:Double, en
 }
 
 
-class ForceVector(startCoord: Coord, endCoord: Coord){
+class ForceVector(startCoord: Coord, var endCoord: Coord){
+
 
   def *(factor: Double): ForceVector ={
-    null
+    val newEndCoord=new Coord(startCoord.getX + deltaX*factor, startCoord.getY + deltaY*factor)
+    new ForceVector(startCoord,newEndCoord)
   }
 
+  def deltaX():Double = endCoord.getX-startCoord.getX
+
+  def deltaY():Double = endCoord.getY-startCoord.getY
+
   def +(other: ForceVector): ForceVector ={
-    null
+    val newEndCoord=new Coord(endCoord.getX() + other.deltaX(), endCoord.getY() + other.deltaY())
+    new ForceVector(startCoord, newEndCoord )
   }
 
 
