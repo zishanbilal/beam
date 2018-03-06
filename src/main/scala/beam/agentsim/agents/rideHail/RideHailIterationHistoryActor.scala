@@ -28,7 +28,7 @@ class RideHailIterationHistoryActor extends Actor{
 case class AddTNCHistoryData(data:TNCHistoryData)
 
 
-case class TNCHistoryData(tncIdleTimes: Set[WaitingEvent], passengerWaitingTimes:Set[WaitingEvent])
+case class TNCHistoryData(tncIdleTimes: mutable.PriorityQueue[WaitingEvent], passengerWaitingTimes:mutable.PriorityQueue[WaitingEvent])
 
 case class GetWaitingTimes()
 
