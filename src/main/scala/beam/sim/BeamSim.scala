@@ -86,7 +86,6 @@ class BeamSim @Inject()(private val actorSystem: ActorSystem,
 
     rideHailIterationHistoryActorRef=actorSystem.actorOf(Props(new RideHailIterationHistoryActor()),"RideHailIterationHistoryActor")
 
-    print()
   }
 
   override def notifyIterationEnds(event: IterationEndsEvent): Unit = {

@@ -81,7 +81,7 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 //  }
 
  //val updateHistoricWaitingTimes:UpdateHistoricWaitingTimes=future.
-  print()
+
 
 
   //TODO improve search to take into account time when available
@@ -159,11 +159,13 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
         sender ! CheckInSuccess
       }     )
 
-    case RepositionResponse(rnd1, rnd2, _, _) =>
-      updateLocationOfAgent(rnd1.vehicleId, rnd2.currentLocation, true)
-      updateLocationOfAgent(rnd2.vehicleId, rnd1.currentLocation, true)
+    case RepositionResponse(rnd1, _) =>
+      updateLocationOfAgent(rnd1.vehicleId, rnd1.currentLocation, true)
 
     case TriggerWithId(RepositioningTimer(tick),triggerId) =>  {
+
+      // move all idling vehicles
+
 
     print()
       // TODO: add initial timer
@@ -188,17 +190,23 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
           rnd1 <- availableRideHailVehicles.get(idRnd1)
           rnd2 <- availableRideHailVehicles.get(idRnd2)
         } yield {
-          val departureTime: BeamTime = DiscreteTime(0)
+          val departureTime: BeamTime = DiscreteTime(tick.toInt)
+
+
+          val rideHailingVehicl1 = StreetVehicle(idRnd1, SpaceTime(
+            (rnd1.currentLocation.loc, tick.toLong)), CAR, asDriver = false)
+
+
           val futureRnd1AgentResponse = router ? RoutingRequest(
-            rnd1.currentLocation.loc, rnd2.currentLocation.loc, departureTime, Vector(), Vector()) //TODO what should go in vectors
+            rnd1.currentLocation.loc, rnd2.currentLocation.loc, departureTime, Vector(), Vector(rideHailingVehicl1)) //TODO what should go in vectors
           // get route from customer to destination
-          val futureRnd2AgentResponse  = router ? RoutingRequest(
-            rnd2.currentLocation.loc, rnd1.currentLocation.loc, departureTime, Vector(), Vector()) //TODO what should go in vectors
+         // val futureRnd2AgentResponse  = router ? RoutingRequest(
+         //   rnd2.currentLocation.loc, rnd1.currentLocation.loc, departureTime, Vector(), Vector()) //TODO what should go in vectors
           for{
             rnd1Response <- futureRnd1AgentResponse.mapTo[RoutingResponse]
-            rnd2Response <- futureRnd2AgentResponse.mapTo[RoutingResponse]
+          //  rnd2Response <- futureRnd2AgentResponse.mapTo[RoutingResponse]
           } yield {
-            self ! RepositionResponse(rnd1, rnd2, rnd1Response, rnd2Response)
+            self ! RepositionResponse(rnd2, rnd1Response)
           }
         }
       }
@@ -511,8 +519,8 @@ object RideHailingManager {
 
   case class RepositioningTimer(tick: Double) extends Trigger
 
-  case class RepositionResponse(rnd1: RideHailingAgentLocation, rnd2: RideHailingManager.RideHailingAgentLocation,
-                                rnd1Response: RoutingResponse, rnd2Response: RoutingResponse)
+  case class RepositionResponse(rnd1: RideHailingAgentLocation,
+                                rnd1Response: RoutingResponse)
 
 
   def props(name: String, services: BeamServices, router: ActorRef, boundingBox: Envelope, surgePricingManager: RideHailSurgePricingManager) = {

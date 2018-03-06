@@ -20,6 +20,10 @@ class ForceVector(startCoord: Coord, var endCoord: Coord) {
     new ForceVector(startCoord, newEndCoord)
   }
 
+  def length(): Double = {
+    Math.sqrt(deltaX()*deltaX()+deltaY()*deltaY())
+  }
+
 
 }
 

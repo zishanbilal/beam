@@ -7,10 +7,12 @@ import org.matsim.core.utils.collections.QuadTree
 import scala.collection.mutable
 
 class TNCMultiIterationData(){
-  val radisForForceCalculation=300;
+  val radisForForceCalculationInMeters=300;
   val maxHistoriySize=3;
   val historyDecayFactor=0.5;
   val minDurationToConsiderTNCIdleInSeconds=600;
+
+  val intervalInSeconds=300;
 
   var tncHistoricData = new mutable.ListBuffer[TNCHistoryData]
 
@@ -26,7 +28,7 @@ class TNCMultiIterationData(){
 
     var force=ForceVector.origin // TODO: replace by empty vector
     for ( i <- 1 to tncHistoricData.size){
-      force +=(getIdlingTNCForcAtLocation(i,spaceTime) + getPassengerWaitingTimeForcAtLocation(i,spaceTime))*forceFactor
+      force +=(getIdlingTNCForcAtLocation(i,spaceTime) + getPassengerWaitingTimeForceAtLocation(i,spaceTime))*forceFactor
       forceFactor*=historyDecayFactor
     }
 
@@ -38,13 +40,53 @@ class TNCMultiIterationData(){
 
 
 
-  def getIdlingTNCForcAtLocation(iterationIndex:Int, location: SpaceTime  ): ForceVector ={
-    null
+  def getIdlingTNCForcAtLocation(iterationIndex:Int, locationTime: SpaceTime  ): ForceVector ={
+    val timeFilteredWaitingEventsSet=getWaitingEventsWithStartTimeIn(tncHistoricData(iterationIndex).tncIdleTimes,locationTime.time, locationTime.time +intervalInSeconds ,true)
+    val filteredWaitingEvents=getWaitingEventsInRadius(timeFilteredWaitingEventsSet,locationTime.loc,radisForForceCalculationInMeters,minDurationToConsiderTNCIdleInSeconds)
+
+    var forceVector=ForceVector.origin
+
+    for (waitingEvent <-filteredWaitingEvents){
+      val idleTNCForceVector=new ForceVector(waitingEvent.location.loc,locationTime.loc)
+      forceVector += idleTNCForceVector*(1/(idleTNCForceVector.length()*idleTNCForceVector.length()))
+    }
+
+    forceVector
+    // do we need a maximum force length here?
   }
 
-  def getPassengerWaitingTimeForcAtLocation(iterationIndex:Int, location: SpaceTime  ): ForceVector ={
-    null
+
+
+// TODO: add parameters for scaling into scaling part of idle and waiting times
+
+  def getPassengerWaitingTimeForceAtLocation(iterationIndex:Int, locationTime: SpaceTime): ForceVector ={
+    val timeFilteredWaitingEventsSet=getWaitingEventsWithStartTimeIn(tncHistoricData(iterationIndex).passengerWaitingTimes,locationTime.time, locationTime.time +intervalInSeconds ,true)
+    val filteredWaitingEvents=getWaitingEventsInRadius(timeFilteredWaitingEventsSet,locationTime.loc,radisForForceCalculationInMeters,0)
+
+
+    var forceVector=ForceVector.origin
+
+    for (waitingEvent <-filteredWaitingEvents){
+      val waitingPassengerForceVector=new ForceVector(waitingEvent.location.loc,locationTime.loc)
+      forceVector += waitingPassengerForceVector*waitingEvent.waitingDuration
+    }
+
+    forceVector
   }
+
+
+
+
+/*
+  def getPullingForceTowardsWaitingPassenger(coordPassenger,waitingTime, coordTNC): Force{
+    val f:force = Force(coordTNC,coordPassenger)
+    f.scale(waitingTime^2);
+    // do we need a maximum force length here?
+  }
+
+
+
+*/
 
 
 
@@ -68,14 +110,12 @@ class TNCMultiIterationData(){
 
 
 
-  def getWaitingEventsInRadius(waitingEvents: mutable.PriorityQueue[WaitingEvent], referencePoint: Coord,  radius:Double, endTime: Double, minRemainingWaitingDuration:Double): Set[WaitingEvent] = {
+  def getWaitingEventsInRadius(waitingEvents: Set[WaitingEvent], referencePoint: Coord,  radius:Double, minRemainingWaitingDuration:Double): Set[WaitingEvent] = {
 
     var waitingEventSet = Set[WaitingEvent]()
 
-    for (i <- 1 to waitingEvents.size){
-      val waitingEvent = waitingEvents.dequeue()
-
-      if(withinRadius(waitingEvent, referencePoint, radius) && (waitingEvent.location.time <= endTime) && (waitingEvent.waitingDuration >= minRemainingWaitingDuration)){
+    for (waitingEvent <- waitingEvents){
+      if(withinRadius(waitingEvent, referencePoint, radius) && (waitingEvent.waitingDuration >= minRemainingWaitingDuration)){
         waitingEventSet += waitingEvent
       }
     }
@@ -86,7 +126,7 @@ class TNCMultiIterationData(){
   def withinRadius(waitingEvent: WaitingEvent, source: Coord, radius: Double):Boolean = {
 
     val distance = getDistance(source, waitingEvent.location.loc)
-
+// TODO: double check, if we need to use different function from GIS lib for this
     distance <= radius
   }
 
