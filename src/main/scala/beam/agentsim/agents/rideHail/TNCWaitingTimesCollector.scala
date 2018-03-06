@@ -43,6 +43,7 @@ class TNCWaitingTimesCollector(eventsManager: EventsManager) extends BasicEventH
     weventPriorityQueue
   }
 
+  /* the time between */
   def getTNCPassengerWaitingTimes() : Set[WaitingEvent]={
 
     ???
@@ -54,52 +55,57 @@ class TNCWaitingTimesCollector(eventsManager: EventsManager) extends BasicEventH
 
 
   override def handleEvent(event: Event): Unit = {
-    if(event.isInstanceOf[PathTraversalEvent]){
+    if(event.isInstanceOf[PathTraversalEvent]) {
 
       val pathTraversalEvent = event.asInstanceOf[PathTraversalEvent]
 
-      val vehilcleId = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_VEHICLE_ID)
+      val mode = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_VEHICLE_ID).toString
 
-      val waitingDuration: Long = if(listOfVehicles.indexOf(vehilcleId) == -1){
+      if (mode.startsWith("rideHailingVehicle")) {
 
-        listOfVehicles.add(vehilcleId)
-        val arrivalTime = 0
-        val departureTime = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_DEPARTURE_TIME).toLong
-        departureTime - arrivalTime
+        val vehilcleId = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_VEHICLE_ID)
 
-      }else{
+        val waitingDuration: Long = if (listOfVehicles.indexOf(vehilcleId) == -1) {
 
-        val arrivalTime = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_ARRIVAL_TIME).toLong
-        val departureTime = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_DEPARTURE_TIME).toLong
-        departureTime - arrivalTime
-      }
+          listOfVehicles.add(vehilcleId)
+          val arrivalTime = 0
+          val departureTime = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_DEPARTURE_TIME).toLong
+          departureTime - arrivalTime
 
-      val endX = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_END_COORDINATE_X).toDouble
-      val endY = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_END_COORDINATE_Y).toDouble
+        } else {
+
+          val arrivalTime = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_ARRIVAL_TIME).toLong
+          val departureTime = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_DEPARTURE_TIME).toLong
+          departureTime - arrivalTime
+        }
+
+        val endX = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_END_COORDINATE_X).toDouble
+        val endY = pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_END_COORDINATE_Y).toDouble
 
 
-      val timeIdlingStart: Long  = if(listOfVehicles.indexOf(vehilcleId) == -1){
-        0
-      }else{
-        pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_ARRIVAL_TIME).toLong
-      }
+        val timeIdlingStart: Long = if (listOfVehicles.indexOf(vehilcleId) == -1) {
+          0
+        } else {
+          pathTraversalEvent.getAttributes.get(PathTraversalEvent.ATTRIBUTE_ARRIVAL_TIME).toLong
+        }
 
-      val spaceTime = SpaceTime(new Coord(endX, endY), timeIdlingStart)
+        val spaceTime = SpaceTime(new Coord(endX, endY), timeIdlingStart)
 
-      val waitingEvent = WaitingEvent(spaceTime, waitingDuration)
+        val waitingEvent = WaitingEvent(spaceTime, waitingDuration)
 
-      val waitingEventsList = waitingEvents.get(vehilcleId)
+        val waitingEventsList = waitingEvents.get(vehilcleId)
 
-      if(waitingEventsList == null){
+        if (waitingEventsList == null) {
 
-        val list = new util.ArrayList[WaitingEvent]()
-        list.add(waitingEvent)
-        waitingEvents.put(vehilcleId, list)
+          val list = new util.ArrayList[WaitingEvent]()
+          list.add(waitingEvent)
+          waitingEvents.put(vehilcleId, list)
 
-      }else {
+        } else {
 
-        waitingEventsList.add(waitingEvent)
-        waitingEvents.put(vehilcleId, waitingEventsList)
+          waitingEventsList.add(waitingEvent)
+          waitingEvents.put(vehilcleId, waitingEventsList)
+        }
       }
     }
   }
