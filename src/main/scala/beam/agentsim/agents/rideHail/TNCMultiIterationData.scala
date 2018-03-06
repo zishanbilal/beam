@@ -51,10 +51,19 @@ class TNCMultiIterationData(){
 
   def getWaitingEventsWithStartTimeIn(waitingEvents: mutable.PriorityQueue[WaitingEvent], startTime: Double, endTime: Double, keepStillWaiting: Boolean): Set[WaitingEvent] ={
 
+    var waitingEventSet = Set[WaitingEvent]()
 
+    for (i <- 1 to waitingEvents.size){
 
+      val waitingEvent = waitingEvents.dequeue()
 
-    null
+      // TODO The condition on keepStillWaiting needs to be added here
+      if((waitingEvent.location.time <= startTime && (waitingEvent.location.time <= endTime))){
+        waitingEventSet += waitingEvent
+      }
+    }
+
+    waitingEventSet
   }
 
 
