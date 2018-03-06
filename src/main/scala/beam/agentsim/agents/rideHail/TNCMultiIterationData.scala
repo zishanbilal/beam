@@ -22,9 +22,9 @@ class TNCMultiIterationData(){
 
 
   def getForceVectorAtLocation(spaceTime: SpaceTime): ForceVector = {
-    var forceFactor=1;
+    var forceFactor=1.0;
 
-    var force=null // TODO: replace by empty vector
+    var force=ForceVector.origin // TODO: replace by empty vector
     for ( i <- 1 to tncHistoricData.size){
       force +=(getIdlingTNCForcAtLocation(i,spaceTime) + getPassengerWaitingTimeForcAtLocation(i,spaceTime))*forceFactor
       forceFactor*=historyDecayFactor
@@ -78,22 +78,3 @@ def getWaitingEventsInRadius(waitingEvents: Set[WaitingEvent], radius:Double, en
 }
 
 
-class ForceVector(startCoord: Coord, var endCoord: Coord){
-
-
-  def *(factor: Double): ForceVector ={
-    val newEndCoord=new Coord(startCoord.getX + deltaX*factor, startCoord.getY + deltaY*factor)
-    new ForceVector(startCoord,newEndCoord)
-  }
-
-  def deltaX():Double = endCoord.getX-startCoord.getX
-
-  def deltaY():Double = endCoord.getY-startCoord.getY
-
-  def +(other: ForceVector): ForceVector ={
-    val newEndCoord=new Coord(endCoord.getX() + other.deltaX(), endCoord.getY() + other.deltaY())
-    new ForceVector(startCoord, newEndCoord )
-  }
-
-
-}
