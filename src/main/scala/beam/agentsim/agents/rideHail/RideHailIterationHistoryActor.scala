@@ -5,6 +5,7 @@ import org.matsim.api.core.v01.events.Event
 import org.matsim.core.api.experimental.events.EventsManager
 import org.matsim.core.events.handler.BasicEventHandler
 
+import scala.collection.mutable
 
 
 
@@ -12,13 +13,13 @@ class RideHailIterationHistoryActor extends Actor{
   import scala.collection.mutable;
 
   // TODO: optimize memory after things work/stabilized
-  val tncHistoricData = new mutable.ArrayBuffer[TNCHistoryData]
+  val tncMultiIterationData = new TNCMultiIterationData()
 
   def receive = {
     case tncHistoricData: AddTNCHistoryData =>
-      this.tncHistoricData += tncHistoricData.data
+      this.tncMultiIterationData.tncHistoricData += tncHistoricData.data
     case GetWaitingTimes() =>   // received message from RideHailManager
-      sender() ! UpdateHistoricWaitingTimes(this.tncHistoricData.last)
+      sender() ! UpdateHistoricWaitingTimes(this.tncMultiIterationData)
     case _      =>  ???
   }
 }
@@ -32,4 +33,5 @@ case class TNCHistoryData(tncIdleTimes: Set[WaitingEvent], passengerWaitingTimes
 case class GetWaitingTimes()
 
 
-case class UpdateHistoricWaitingTimes(tncHistoricData: TNCHistoryData)
+case class UpdateHistoricWaitingTimes(tncHistoricData: TNCMultiIterationData)
+

@@ -70,7 +70,7 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 
   val rideHailIterationHistoryActorRef = context.actorSelection("akka://beam-actor-system/user/RideHailIterationHistoryActor")
 
-  var updateHistoricWaitingTimes: UpdateHistoricWaitingTimes = _
+  var tncMultiIterationData: TNCMultiIterationData = _
 
   rideHailIterationHistoryActorRef ! GetWaitingTimes()
 
@@ -115,10 +115,10 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
   def receive = uninitialized
 
   def uninitialized: Receive = {
-    case UpdateHistoricWaitingTimes(value) =>
-      updateHistoricWaitingTimes = UpdateHistoricWaitingTimes(value)
+    case UpdateHistoricWaitingTimes(data) =>
+      tncMultiIterationData = data
       context.become(initialized)
-    case m => log.debug(s"Unknown message while uninitialized $m")
+    case m => log.error(s"Unknown message while uninitialized $m")
   }
 
   def initialized: Receive = {
