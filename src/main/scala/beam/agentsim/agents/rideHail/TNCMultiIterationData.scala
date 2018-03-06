@@ -47,12 +47,18 @@ class TNCMultiIterationData(){
 
 
   def getWaitingEventsWithStartTimeIn(waitingEvents: mutable.PriorityQueue[WaitingEvent], startTime: Double, endTime: Double, keepStillWaiting: Boolean): Set[WaitingEvent] ={
+
+
+
+
     null
   }
 
 
 
 def getWaitingEventsInRadius(waitingEvents: Set[WaitingEvent], radius:Double, endTime: Double, minRemainingWaitingDuration:Double): Set[WaitingEvent] ={
+  //convertSetToQuadTree(waitingEvents)
+
 
   null
 }
