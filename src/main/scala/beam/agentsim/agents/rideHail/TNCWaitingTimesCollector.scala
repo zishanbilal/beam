@@ -46,7 +46,7 @@ class TNCWaitingTimesCollector(eventsManager: EventsManager) extends BasicEventH
   }
 
   def tellHistoryToRideHailIterationHistoryActor(rideHailIterationHistoryActorRef:ActorRef): Unit ={
-    rideHailIterationHistoryActorRef ! AddTNCHistoryData(null,null)
+    rideHailIterationHistoryActorRef ! AddTNCHistoryData(null)
   }
 
 

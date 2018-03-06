@@ -17,7 +17,7 @@ class RideHailIterationHistoryActor extends Actor{
 
   def receive = {
     case tncHistoricData: AddTNCHistoryData =>
-      this.tncMultiIterationData.tncHistoricData += tncHistoricData.data
+      this.tncMultiIterationData.tncHistoricData.insert(0,tncHistoricData.data);
     case GetWaitingTimes() =>   // received message from RideHailManager
       sender() ! UpdateHistoricWaitingTimes(this.tncMultiIterationData)
     case _      =>  ???

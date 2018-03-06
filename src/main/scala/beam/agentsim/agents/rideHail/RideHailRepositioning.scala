@@ -13,24 +13,7 @@ import org.matsim.core.events.handler.BasicEventHandler
 
 
 
-def getForceAt(coordinate, time):Force{
-  waitingLocations=getPreviousIteration.AtTime(time).getWaitingLocationsInRadius(coordinate, radius);
 
-  idlingLocations=getPreviousIteration.AtTime(time).getIdlingLocationsInRadius(coordinate, radius);
-
-  val forces=ArrayBuffer[Force]();
-
-  for (waitingLoc <- waitingLocations){
-    forces.add(forces);
-  }
-
-  for (waitingLoc <- idlingLocations){
-    forces.add(forces);
-  }
-
-  val finalForce=getSumOfForces(forces)
-  return finalForce;
-}
 
 
 def mainRepositioningAlgorithm(time){
