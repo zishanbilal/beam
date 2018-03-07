@@ -138,8 +138,19 @@ class TNCMultiIterationData(){
     Math.sqrt(v2 - v1)
   }
 
-  def convertSetToQuadTree(waitingEvents: Set[WaitingEvent]): QuadTree[WaitingEvent] ={
-    null
+  def convertSetToQuadTree(waitingEvents: Set[WaitingEvent]): QuadTree[WaitingEvent] = {
+
+    val (minX, maxX, minY, maxY) = waitingEvents.foldLeft((Double.MaxValue, Double.MinValue, Double.MaxValue, Double.MinValue)){case ((minX, maxX, minY, maxY), we) =>
+      (Math.min(minX, we.location.loc.getX),
+      Math.min(minY, we.location.loc.getY),
+      Math.max(maxX, we.location.loc.getX),
+      Math.max(maxY, we.location.loc.getX))
+    }
+
+    waitingEvents.foldLeft(new QuadTree[WaitingEvent](minX, minY, maxX, maxY)) { case (quadTree, we) =>
+        quadTree.put(we.location.loc.getX, we.location.loc.getY, we)
+        quadTree
+    }
   }
 
 
