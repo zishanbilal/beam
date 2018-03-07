@@ -59,6 +59,8 @@ class TNCMultiIterationData(){
 
 // TODO: add parameters for scaling into scaling part of idle and waiting times
 
+  // TODO: think. experiment with conversion between meters and waiting time.
+
   def getPassengerWaitingTimeForceAtLocation(iterationIndex:Int, locationTime: SpaceTime): ForceVector ={
     val timeFilteredWaitingEventsSet=getWaitingEventsWithStartTimeIn(tncHistoricData(iterationIndex).passengerWaitingTimes,locationTime.time, locationTime.time +intervalInSeconds ,true)
     val filteredWaitingEvents=getWaitingEventsInRadius(timeFilteredWaitingEventsSet,locationTime.loc,radisForForceCalculationInMeters,0)
