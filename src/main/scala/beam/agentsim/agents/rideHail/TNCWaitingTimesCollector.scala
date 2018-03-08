@@ -132,7 +132,7 @@ class TNCWaitingTimesCollector(eventsManager: EventsManager,matsimNetwork:Networ
       println(passengerWaitingEventsQueue.dequeue().location.time)
     }
 
-    println("found")
+    //println("found")
   }
 
   def checkCorrespondingModeChoiceEvent(event: Event): Unit = {
