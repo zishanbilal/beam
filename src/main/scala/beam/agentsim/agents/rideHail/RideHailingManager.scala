@@ -167,7 +167,8 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
       // move all idling vehicles
 
 
-    print()
+
+    //print()
       // TODO: add initial timer
 
       // TODO: reposition vehicles
