@@ -26,7 +26,7 @@ import beam.analysis.plots.{GraphRideHailingRevenue, GraphSurgePricing}
 import beam.router.BeamRouter.{Location, RoutingRequest, RoutingResponse}
 import beam.router.Modes.BeamMode._
 import beam.router.RoutingModel
-import beam.router.RoutingModel.{BeamTime, BeamTrip, DiscreteTime}
+import beam.router.RoutingModel.{BeamLeg, BeamTime, BeamTrip, DiscreteTime}
 import beam.sim.{BeamServices, HasServices}
 import com.eaio.uuid.UUIDGen
 import com.google.common.cache.{Cache, CacheBuilder}
@@ -102,6 +102,7 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
   private val availableRideHailVehicles = collection.concurrent.TrieMap[Id[Vehicle], RideHailingAgentLocation]()
   private val inServiceRideHailVehicles = collection.concurrent.TrieMap[Id[Vehicle], RideHailingAgentLocation]()
 
+
   /**
     * Customer inquiries awaiting reservation confirmation.
     */
@@ -138,7 +139,7 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
       surgePricingManager.updateSurgePriceLevels()
       surgePricingManager.incrementIteration()
 
-      sender() ! ()  // return empty object to blocking caller
+      sender() ! () // return empty object to blocking caller
 
     case RegisterResource(vehId: Id[Vehicle]) =>
       resources.put(agentsim.vehicleId2BeamVehicleId(vehId), beamServices.vehicles(vehId))
@@ -157,18 +158,21 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
         val rideHailingAgentLocation = RideHailingAgentLocation(driver, vehicleId, availableIn.get)
         makeAvailable(rideHailingAgentLocation)
         sender ! CheckInSuccess
-      }     )
+      })
 
     case RepositionResponse(rnd1, _) =>
       updateLocationOfAgent(rnd1.vehicleId, rnd1.currentLocation, true)
 
-    case TriggerWithId(RepositioningTimer(tick),triggerId) =>  {
+    case TriggerWithId(RepositioningTimer(tick), triggerId) => {
+
+
+
+      //tryMove(tick)
 
       // move all idling vehicles
 
 
-
-    //print()
+      //print()
       // TODO: add initial timer
 
       // TODO: reposition vehicles
@@ -177,50 +181,19 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 
       // get two random idling TNCs
       // move one TNC to the other.
-      val rnd = new Random
-      val availableKeyset = availableRideHailVehicles.keySet.toArray
-      implicit val timeout: Timeout = Timeout(50000, TimeUnit.SECONDS)
-      import context.dispatcher
-      if(availableKeyset.size > 1) {
-        val idRnd1 = availableKeyset.apply(rnd.nextInt(availableKeyset.size))
-        val idRnd2 = availableKeyset
-          .filterNot(_.equals(idRnd1))
-          .apply(rnd.nextInt(availableKeyset.size - 1))
-
-        for{
-          rnd1 <- availableRideHailVehicles.get(idRnd1)
-          rnd2 <- availableRideHailVehicles.get(idRnd2)
-        } yield {
-          val departureTime: BeamTime = DiscreteTime(tick.toInt)
 
 
-          val rideHailingVehicl1 = StreetVehicle(idRnd1, SpaceTime(
-            (rnd1.currentLocation.loc, tick.toLong)), CAR, asDriver = false)
-
-
-          val futureRnd1AgentResponse = router ? RoutingRequest(
-            rnd1.currentLocation.loc, rnd2.currentLocation.loc, departureTime, Vector(), Vector(rideHailingVehicl1)) //TODO what should go in vectors
-          // get route from customer to destination
-         // val futureRnd2AgentResponse  = router ? RoutingRequest(
-         //   rnd2.currentLocation.loc, rnd1.currentLocation.loc, departureTime, Vector(), Vector()) //TODO what should go in vectors
-          for{
-            rnd1Response <- futureRnd1AgentResponse.mapTo[RoutingResponse]
-          //  rnd2Response <- futureRnd2AgentResponse.mapTo[RoutingResponse]
-          } yield {
-            self ! RepositionResponse(rnd2, rnd1Response)
-          }
-        }
-      }
-
-//      updateLocationOfAgent(rnd1, )
+      //      updateLocationOfAgent(rnd1, )
       // TODO: schedule next Timer
       // start relocate?
 
       // end relocate?
 
+      repositionVehicle()
 
-      val timerTrigger=RepositioningTimer(tick+selfTimerTimoutDuration)
-      val timerMessage=ScheduleTrigger(timerTrigger, self)
+
+      val timerTrigger = RepositioningTimer(tick + selfTimerTimoutDuration)
+      val timerMessage = ScheduleTrigger(timerTrigger, self)
       beamServices.schedulerRef ! timerMessage
       beamServices.schedulerRef ! TriggerUtils.completed(triggerId)
     }
@@ -249,21 +222,21 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
             rideHailing2DestinationResponse <- futureRideHailing2DestinationResponse.mapTo[RoutingResponse]
           } {
             // TODO: could we just call the code, instead of sending the message here?
-            self ! RoutingResponses(customerAgent, inquiryId, personId, customerPickUp,departAt, rideHailingLocation, shortDistanceToRideHailingAgent, rideHailingAgent2CustomerResponse, rideHailing2DestinationResponse)
+            self ! RoutingResponses(customerAgent, inquiryId, personId, customerPickUp, departAt, rideHailingLocation, shortDistanceToRideHailingAgent, rideHailingAgent2CustomerResponse, rideHailing2DestinationResponse)
           }
         case None =>
           // no rides to hail
           customerAgent ! RideHailingInquiryResponse(inquiryId, Vector(), error = Option(CouldNotFindRouteToCustomer))
       }
 
-    case RoutingResponses(customerAgent, inquiryId, personId, customerPickUp,departAt, rideHailingLocation, shortDistanceToRideHailingAgent, rideHailingAgent2CustomerResponse, rideHailing2DestinationResponse) =>
+    case RoutingResponses(customerAgent, inquiryId, personId, customerPickUp, departAt, rideHailingLocation, shortDistanceToRideHailingAgent, rideHailingAgent2CustomerResponse, rideHailing2DestinationResponse) =>
       val timesToCustomer: Vector[Long] = rideHailingAgent2CustomerResponse.itineraries.map(t => t.totalTravelTime)
       // TODO: Find better way of doing this error checking than sentry value
       val timeToCustomer = if (timesToCustomer.nonEmpty) {
         timesToCustomer.min
       } else Long.MaxValue
       // TODO: Do unit conversion elsewhere... use squants or homegrown unit conversions, but enforce
-      val rideHailingFare = DefaultCostPerMinute / 60.0 * surgePricingManager.getSurgeLevel(customerPickUp,departAt.atTime.toDouble)
+      val rideHailingFare = DefaultCostPerMinute / 60.0 * surgePricingManager.getSurgeLevel(customerPickUp, departAt.atTime.toDouble)
 
       val customerPlans2Costs: Map[RoutingModel.EmbodiedBeamTrip, BigDecimal] = rideHailing2DestinationResponse.itineraries.map(t => (t, rideHailingFare * t.totalTravelTime)).toMap
       val itins2Cust = rideHailingAgent2CustomerResponse.itineraries.filter(x => x.tripClassifier.equals(RIDE_HAIL))
@@ -309,7 +282,7 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
         closestRHA match {
           case Some((closestRideHailingAgent)) =>
             val travelProposal = travelPlanOpt.get._1
-            surgePricingManager.addRideCost(departAt.atTime, travelProposal.estimatedPrice.doubleValue(),customerPickUp)
+            surgePricingManager.addRideCost(departAt.atTime, travelProposal.estimatedPrice.doubleValue(), customerPickUp)
 
 
             val tripPlan = travelPlanOpt.map(_._2)
@@ -333,7 +306,50 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
     case msg =>
       log.warn(s"unknown message received by RideHailingManager $msg")
 
+
   }
+      private def tryMove(tick:Double)={
+
+        val rnd = new Random
+        val availableKeyset = availableRideHailVehicles.keySet.toArray
+        implicit val timeout: Timeout = Timeout(50000, TimeUnit.SECONDS)
+        import context.dispatcher
+        if(availableKeyset.size > 1) {
+          val idRnd1 = availableKeyset.apply(rnd.nextInt(availableKeyset.size))
+          val idRnd2 = availableKeyset
+            .filterNot(_.equals(idRnd1))
+            .apply(rnd.nextInt(availableKeyset.size - 1))
+
+          for{
+            rnd1 <- availableRideHailVehicles.get(idRnd1)
+            rnd2 <- availableRideHailVehicles.get(idRnd2)
+          } yield {
+            val departureTime: BeamTime = DiscreteTime(tick.toInt)
+
+
+            val rideHailingVehicl1 = StreetVehicle(idRnd1, SpaceTime(
+              (rnd1.currentLocation.loc, tick.toLong)), CAR, asDriver = false)
+
+
+            val futureRnd1AgentResponse = router ? RoutingRequest(
+              rnd1.currentLocation.loc, rnd2.currentLocation.loc, departureTime, Vector(), Vector(rideHailingVehicl1)) //TODO what should go in vectors
+            // get route from customer to destination
+            // val futureRnd2AgentResponse  = router ? RoutingRequest(
+            //   rnd2.currentLocation.loc, rnd1.currentLocation.loc, departureTime, Vector(), Vector()) //TODO what should go in vectors
+            for{
+              rnd1Response <- futureRnd1AgentResponse.mapTo[RoutingResponse]
+              //  rnd2Response <- futureRnd2AgentResponse.mapTo[RoutingResponse]
+            } yield {
+              self ! RepositionResponse(rnd2, rnd1Response)
+            }
+          }
+        }
+
+
+    }
+
+
+
 
   private def findClosestRideHailingAgents(inquiryId: Id[RideHailingInquiry], customerPickUp: Location) = {
 
@@ -437,6 +453,14 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
       .last, vehiclePersonId, triggerToSchedule))))
     closestRideHailingAgentLocation.rideHailAgent ! ModifyPassengerSchedule(passengerSchedule, Some(inquiryId))
   }
+
+  private def repositionVehicle(legs: Seq[BeamLeg], inquiryId: Id[RideHailingManager.RideHailingInquiry],rideHailAgent: ActorRef):Unit={
+    val passengerSchedule = PassengerSchedule()
+    passengerSchedule.addLegs(legs)
+    rideHailAgent ! ModifyPassengerSchedule(passengerSchedule, Some(inquiryId))
+  }
+
+
 
   private def completeReservation(inquiryId: Id[RideHailingInquiry]): Unit = {
     pendingModifyPassengerScheduleAcks.remove(inquiryId) match {
