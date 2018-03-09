@@ -107,8 +107,21 @@ trait DrivesVehicle[T <: BeamAgentData] extends BeamAgent[T] with HasServices {
       //      logDebug(s"Received StartLeg($tick, ${newLeg.startTime}) for
       // beamVehicleId=${_currentVehicleUnderControl.get.id} ")
 
+
+
       passengerSchedule.schedule.get(newLeg) match {
+
+
+
+
         case Some(manifest) =>
+
+
+          if(id.toString.contains("rideHail")){
+            print()
+          }
+
+
           _currentLeg = Some(newLeg)
           manifest.riders.foreach { personVehicle =>
             logDebug(s"Scheduling NotifyLegStartTrigger for Person ${personVehicle.personId}")

@@ -3,6 +3,7 @@ package beam.agentsim.agents.rideHail
 import beam.agentsim.agents.BeamAgent.BeamAgentData
 import java.util.concurrent.TimeUnit
 
+import akka.actor.FSM.Failure
 import akka.actor.{ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
@@ -10,6 +11,7 @@ import beam.agentsim
 import beam.agentsim.Resource._
 import beam.agentsim.ResourceManager.VehicleManager
 import beam.agentsim.agents.BeamAgent.BeamAgentData
+import beam.agentsim.agents.PersonAgent.Waiting
 import beam.agentsim.agents.{PersonAgent, TriggerUtils}
 import beam.agentsim.agents.TriggerUtils._
 import beam.agentsim.agents.household.HouseholdActor.ReleaseVehicleReservation
@@ -112,6 +114,9 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
     ReservationResponse]()
   private var lockedVehicles = Set[Id[Vehicle]]()
 
+  private var movedVehilce=false
+
+  private val repositioningVehicleLegs= collection.mutable.TreeMap[Id[Vehicle],(BeamLeg,Double,Long)]()
 
   def receive = uninitialized
 
@@ -160,14 +165,31 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
         sender ! CheckInSuccess
       })
 
-    case RepositionResponse(rnd1, _) =>
-      updateLocationOfAgent(rnd1.vehicleId, rnd1.currentLocation, true)
+    case RepositionResponse(rnd1, rideHailingAgent2CustomerResponse,tick,triggerId) =>
+
+      val timesToCustomer: Vector[Long] = rideHailingAgent2CustomerResponse.itineraries.map(t => t.totalTravelTime)
+
+      val itins2Cust = rideHailingAgent2CustomerResponse.itineraries.filter(x => x.tripClassifier.equals(RIDE_HAIL))
+
+        val modRHA2Cust = itins2Cust.map(l => l.copy(legs = l.legs.map(c => c.copy(asDriver = true))))
+
+        val rideHailingAgent2CustomerResponseMod = RoutingResponse(modRHA2Cust)
+
+
+      val passengerSchedule = PassengerSchedule()
+      passengerSchedule.addLegs(rideHailingAgent2CustomerResponse.itineraries.head.toBeamTrip.legs)
+      rnd1.rideHailAgent ! ModifyPassengerSchedule(passengerSchedule, Some(Id.create("reposition-" + rnd1.vehicleId,classOf[String])))
+
+
+      repositioningVehicleLegs.put(rnd1.vehicleId,(rideHailingAgent2CustomerResponse.itineraries.head.toBeamTrip.legs.head,tick,triggerId))
 
     case TriggerWithId(RepositioningTimer(tick), triggerId) => {
 
 
-
-      //tryMove(tick)
+      if (!movedVehilce) {
+      tryMove(tick, triggerId)
+        movedVehilce=true
+    }
 
       // move all idling vehicles
 
@@ -189,7 +211,7 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 
       // end relocate?
 
-      repositionVehicle()
+   //   repositionVehicle(null,null,null)
 
 
       val timerTrigger = RepositioningTimer(tick + selfTimerTimoutDuration)
@@ -298,7 +320,17 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
         (UnknownInquiryIdError))
       }
     case ModifyPassengerScheduleAck(inquiryIDOption) =>
-      completeReservation(Id.create(inquiryIDOption.get.toString, classOf[RideHailingInquiry]))
+
+      if (!inquiryIDOption.get.toString.startsWith("repo")){
+        completeReservation(Id.create(inquiryIDOption.get.toString, classOf[RideHailingInquiry]))
+      } else {
+        val rideHailId=Id.create(inquiryIDOption.get.toString.replaceAll("reposition-",""),classOf[Vehicle]);
+        val (leg, tick,triggerId)=repositioningVehicleLegs.get(rideHailId).get
+        sender() ! TriggerWithId(StartLegTrigger(tick, leg), triggerId)
+      }
+
+
+
 
     case ReleaseVehicleReservation(_, vehId) =>
       lockedVehicles -= vehId
@@ -308,17 +340,33 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 
 
   }
-      private def tryMove(tick:Double)={
+
+
+  private def repositionVehicle(legs: Seq[BeamLeg], inquiryId: Id[RideHailingManager.RideHailingInquiry],rideHailAgent: ActorRef):Unit={
+    val passengerSchedule = PassengerSchedule()
+    passengerSchedule.addLegs(legs)
+    rideHailAgent ! ModifyPassengerSchedule(passengerSchedule, Some(inquiryId))
+
+
+  }
+
+
+
+  private def tryMove(tick:Double,triggerId: Long)={
 
         val rnd = new Random
         val availableKeyset = availableRideHailVehicles.keySet.toArray
         implicit val timeout: Timeout = Timeout(50000, TimeUnit.SECONDS)
         import context.dispatcher
         if(availableKeyset.size > 1) {
-          val idRnd1 = availableKeyset.apply(rnd.nextInt(availableKeyset.size))
-          val idRnd2 = availableKeyset
-            .filterNot(_.equals(idRnd1))
-            .apply(rnd.nextInt(availableKeyset.size - 1))
+
+          val idRnd1 =Id.create("rideHailingVehicle-person=13",classOf[Vehicle])
+          val idRnd2 =Id.create("rideHailingVehicle-person=16",classOf[Vehicle])
+
+          //val idRnd1 = availableKeyset.apply(rnd.nextInt(availableKeyset.size))
+          //val idRnd2 = availableKeyset
+          //  .filterNot(_.equals(idRnd1))
+          //  .apply(rnd.nextInt(availableKeyset.size - 1))
 
           for{
             rnd1 <- availableRideHailVehicles.get(idRnd1)
@@ -340,7 +388,7 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
               rnd1Response <- futureRnd1AgentResponse.mapTo[RoutingResponse]
               //  rnd2Response <- futureRnd2AgentResponse.mapTo[RoutingResponse]
             } yield {
-              self ! RepositionResponse(rnd2, rnd1Response)
+              self ! RepositionResponse(rnd2, rnd1Response,tick,triggerId)
             }
           }
         }
@@ -454,11 +502,6 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
     closestRideHailingAgentLocation.rideHailAgent ! ModifyPassengerSchedule(passengerSchedule, Some(inquiryId))
   }
 
-  private def repositionVehicle(legs: Seq[BeamLeg], inquiryId: Id[RideHailingManager.RideHailingInquiry],rideHailAgent: ActorRef):Unit={
-    val passengerSchedule = PassengerSchedule()
-    passengerSchedule.addLegs(legs)
-    rideHailAgent ! ModifyPassengerSchedule(passengerSchedule, Some(inquiryId))
-  }
 
 
 
@@ -545,7 +588,7 @@ object RideHailingManager {
   case class RepositioningTimer(tick: Double) extends Trigger
 
   case class RepositionResponse(rnd1: RideHailingAgentLocation,
-                                rnd1Response: RoutingResponse)
+                                rnd1Response: RoutingResponse, tick:Double,triggerId: Long)
 
 
   def props(name: String, services: BeamServices, router: ActorRef, boundingBox: Envelope, surgePricingManager: RideHailSurgePricingManager) = {
