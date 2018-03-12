@@ -34,7 +34,7 @@ jobs:
 
       - run:
           name: Build...
-          command: ./gradlew build
+          command: ./gradlew assemble
 
       - save_cache:
           paths:
