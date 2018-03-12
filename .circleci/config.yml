@@ -33,12 +33,8 @@ jobs:
             git lfs pull
 
       - run:
-          name: Build...
-          command: ./gradlew assemble
-
-      - run:
-          name: Test...
-          command: ./gradlew test --stacktrace
+          name: Build and Test...
+          command: ./gradlew build --no-daemon --stacktrace
 
       - save_cache:
           paths:
