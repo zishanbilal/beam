@@ -5,11 +5,53 @@ machine:
   environment:
     GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx512m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
 
-dependencies:
-  pre:
-    - git lfs pull
-  post:
-    - ./gradlew assemble
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:8-jdk
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/postgres:9.4
+
+    working_directory: ~/repo
+
+    environment:
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx512m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
+
+    steps:
+      - checkout
+
+      - run:
+          name: LFS
+          command: |
+            sudo curl -sSL https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+            sudo apt-get update
+            sudo apt-get install -y git-lfs
+            git lfs install
+            git lfs pull
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - beam-cache-{{ checksum "build.gradle" }}
+          # fallback to using the latest cache if no exact match is found
+          - beam-cache-
+
+      - run: gradle dependencies
+
+      - save_cache:
+          paths:
+            - ~/.gradle
+            - ~/.m2
+          key: beam-cache-{{ checksum "build.gradle" }}
+
+      # run tests!
+      - run: gradle test --stacktrace
 
 test:
   timeout: 1800
