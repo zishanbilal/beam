@@ -1,20 +1,8 @@
 version: 2
-machine:
-  java:
-    version: oraclejdk8
-  environment:
-    GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx512m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
-
-version: 2
 jobs:
   build:
     docker:
       - image: circleci/openjdk:8-jdk
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
 
     working_directory: ~/repo
 
@@ -50,7 +38,6 @@ jobs:
             - ~/.m2
           key: beam-cache-{{ checksum "build.gradle" }}
 
-      # run tests!
       - run: gradle test --stacktrace
 
 test:
