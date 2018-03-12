@@ -9,7 +9,6 @@ jobs:
     environment:
       # Customize the JVM maximum heap limit
       JVM_OPTS: -Xmx3200m
-      TERM: dumb
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx512m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
 
     steps:
@@ -29,15 +28,13 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y git-lfs=2.3.3
             git lfs install
-            git lfs env
-            echo "http://beam:beam@ec2-52-15-164-178.us-east-2.compute.amazonaws.com%3a8080" > ~/.git-credentials
             echo "[lfs]" > .lfsconfig
             echo "  url = http://beam:beam@ec2-52-15-164-178.us-east-2.compute.amazonaws.com:8080/LBNL-UCB-STI/beam.git" >> .lfsconfig
             git lfs pull
 
       - run:
           name: Build...
-          command: gradle build
+          command: ./gradle build
 
       - save_cache:
           paths:
@@ -48,7 +45,7 @@ jobs:
 
       - run:
           name: Test...
-          command: gradle test --stacktrace
+          command: ./gradle test --stacktrace
 
 test:
   timeout: 1800
