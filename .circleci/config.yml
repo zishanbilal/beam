@@ -8,7 +8,7 @@ jobs:
 
     environment:
       # Customize the JVM maximum heap limit
-      JVM_OPTS: -Xmx3200m
+      # JVM_OPTS: -Xmx3200m
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx512m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
 
     steps:
@@ -36,16 +36,16 @@ jobs:
           name: Build...
           command: ./gradlew assemble
 
+      - run:
+          name: Test...
+          command: ./gradlew test --stacktrace
+
       - save_cache:
           paths:
             - ~/.gradle
             - ~/.m2
             - ~/beam/.git
           key: beam-cache-{{ checksum "build.gradle" }}
-
-      - run:
-          name: Test...
-          command: ./gradlew test --stacktrace
 
 test:
   timeout: 1800
