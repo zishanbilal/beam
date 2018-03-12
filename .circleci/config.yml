@@ -31,9 +31,8 @@ jobs:
           - beam-cache-
 
       - run:
-        name: Build...
-        command: |
-          gradle build
+          name: Build...
+          command: gradle build
 
       - save_cache:
           paths:
@@ -42,9 +41,8 @@ jobs:
           key: beam-cache-{{ checksum "build.gradle" }}
 
       - run:
-        name: Test...
-        command: |
-          gradle test --stacktrace
+          name: Test...
+          command: gradle test --stacktrace
 
 test:
   timeout: 1800
