@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: anapsix/alpine-java:8_jdk
+      - image: airdock/oracle-jdk:1.8
 
     working_directory: ~/beam
 
