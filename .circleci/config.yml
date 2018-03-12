@@ -27,8 +27,9 @@ jobs:
           command: |
             sudo curl -sSL https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
             sudo apt-get update
-            sudo apt-get install -y git-lfs=2.3.4
+            sudo apt-get install -y git-lfs=2.3.3
             git lfs install
+            git lfs env
             echo "http://beam:beam@ec2-52-15-164-178.us-east-2.compute.amazonaws.com%3a8080" > ~/.git-credentials
             git lfs pull
 
