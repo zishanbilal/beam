@@ -15,11 +15,11 @@ jobs:
       - checkout
 
       - run:
-          name: LFS
+          name: Setup LFS
           command: |
             sudo curl -sSL https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
             sudo apt-get update
-            sudo apt-get install -y git-lfs
+            sudo apt-get install -y git-lfs=2.3.4
             git lfs install
             git lfs pull
 
@@ -30,7 +30,10 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - beam-cache-
 
-      - run: gradle dependencies
+      - run:
+        name: Build...
+        command: |
+          gradle build
 
       - save_cache:
           paths:
@@ -38,7 +41,10 @@ jobs:
             - ~/.m2
           key: beam-cache-{{ checksum "build.gradle" }}
 
-      - run: gradle test --stacktrace
+      - run:
+        name: Test...
+        command: |
+          gradle test --stacktrace
 
 test:
   timeout: 1800
