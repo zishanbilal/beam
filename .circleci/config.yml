@@ -34,7 +34,7 @@ jobs:
 
       - run:
           name: Build...
-          command: ./gradle build
+          command: ./gradlew build
 
       - save_cache:
           paths:
@@ -45,7 +45,7 @@ jobs:
 
       - run:
           name: Test...
-          command: ./gradle test --stacktrace
+          command: ./gradlew test --stacktrace
 
 test:
   timeout: 1800
