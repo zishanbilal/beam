@@ -1,7 +1,14 @@
 #!/usr/bin/env groovy
 
 node {
-    git 'https://github.com/zishanbilal/beam.git'
+    ec2 cloud: 'Jenkins Cloud', template: 'ec2'
+
+    checkout([$class: 'GitSCM', 
+              branches: [[name: '*/master']], 
+              doGenerateSubmoduleConfigurations: false, 
+              extensions: [[$class: 'GitLFSPull']], 
+              submoduleCfg: [], 
+              userRemoteConfigs: [[url: 'https://github.com/zishanbilal/beam.git']]])
 
     stage('Build') {
         print 'Building...'
