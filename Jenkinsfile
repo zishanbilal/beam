@@ -1,18 +1,16 @@
 #!/usr/bin/env groovy
 
-pipeline {
-    stages {
-        stage('Build') {
-            steps {
-                echo 'Building...'
-                ./gradlew assemble
-            }
+stages {
+    stage('Build') {
+        steps {
+            print 'Building...'
+            ./gradlew assemble
         }
-        stage('Test') {
-            steps {
-                echo 'Testing...'
-                ./gradlew build
-            }
+    }
+    stage('Test') {
+        steps {
+            print 'Testing...'
+            ./gradlew build
         }
     }
 }
