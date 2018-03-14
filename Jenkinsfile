@@ -3,10 +3,14 @@
 node {
     stage('Build') {
         print 'Building...'
-        ./gradlew assemble
+        gradle 'assemble'
     }
     stage('Test') {
         print 'Testing...'
-        ./gradlew build
+        gradle 'build'
     }
+}
+
+def gradle(command) {
+    sh "./gradlew ${command}"
 }
