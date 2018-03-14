@@ -30,9 +30,12 @@ import beam.router.Modes.BeamMode._
 import beam.router.RoutingModel
 import beam.router.RoutingModel.{BeamLeg, BeamTime, BeamTrip, DiscreteTime}
 import beam.sim.{BeamServices, HasServices}
+import com.conveyal.r5.streets.TravelTimeCalculator
 import com.eaio.uuid.UUIDGen
 import com.google.common.cache.{Cache, CacheBuilder}
+import com.sun.xml.internal.bind.v2.TODO
 import com.vividsolutions.jts.geom.Envelope
+import org.matsim.api.core.v01.network.Link
 import org.matsim.api.core.v01.{Coord, Id}
 import org.matsim.core.utils.collections.QuadTree
 import org.matsim.core.utils.geometry.CoordUtils
@@ -103,6 +106,11 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
   }
   private val availableRideHailVehicles = collection.concurrent.TrieMap[Id[Vehicle], RideHailingAgentLocation]()
   private val inServiceRideHailVehicles = collection.concurrent.TrieMap[Id[Vehicle], RideHailingAgentLocation]()
+
+  // TODO: discuss again, if inheritence might have been a better choice.
+  var tncResourceAllocationManager:TNCResourceAllocationManager=new TNCDefaultResourceAllocationManager()  // TODO: initiaize this somewhere
+  // TODO: depending on what we select in config, select default or stanford tnc resource allocator
+  //beam.agentsim.agents.rideHailing.resourceAllocationManager="STANFORD_ALLOCATION_MANAGER_V1"
 
 
   /**
@@ -185,11 +193,15 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 
     case TriggerWithId(RepositioningTimer(tick), triggerId) => {
 
-
       if (!movedVehilce) {
       tryMove(tick, triggerId)
         movedVehilce=true
     }
+
+
+      tncResourceAllocationManager.allocatePassengers(null)
+
+      tncResourceAllocationManager.repositionIdleVehicles()
 
       // move all idling vehicles
 
@@ -227,8 +239,16 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
 
 
     case RideHailingInquiry(inquiryId, personId, customerPickUp, departAt, destination) =>
-
       val customerAgent = sender()
+
+
+      // TODO: implement first before uncommenting
+      //customerAgent ! RideHailingInquiryResponse(inquiryId, Vector(tncResourceAllocationManager.getNonBindingTravelProposalAsEstimate(null,null)))
+        // TODO: push all code into tncResourceAllocationManager.getNonBindingTravelProposalAsEstimate related to getting travel proposal (default implementation)
+
+
+      //
+
       getClosestRideHailingAgent(customerPickUp, radius) match {
         case Some((rideHailingLocation, shortDistanceToRideHailingAgent)) =>
           lockedVehicles += rideHailingLocation.vehicleId
@@ -289,6 +309,7 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
         pendingInquiries.put(inquiryId, (travelProposal, modRHA2Dest.head.toBeamTrip()))
         log.debug(s"Found ride to hail for  person=$personId and inquiryId=$inquiryId within " +
           s"$shortDistanceToRideHailingAgent meters, timeToCustomer=$timeToCustomer seconds and cost=$$$cost")
+
         customerAgent ! RideHailingInquiryResponse(inquiryId, Vector(travelProposal))
       } else {
         log.debug(s"Router could not find route to customer person=$personId for inquiryId=$inquiryId")
@@ -321,6 +342,8 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
       }
     case ModifyPassengerScheduleAck(inquiryIDOption) =>
 
+
+      // TODO: double check if this is correct
       if (!inquiryIDOption.get.toString.startsWith("repo")){
         completeReservation(Id.create(inquiryIDOption.get.toString, classOf[RideHailingInquiry]))
       } else {
@@ -360,8 +383,16 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
         import context.dispatcher
         if(availableKeyset.size > 1) {
 
-          val idRnd1 =Id.create("rideHailingVehicle-person=13",classOf[Vehicle])
-          val idRnd2 =Id.create("rideHailingVehicle-person=16",classOf[Vehicle])
+          //TODO: check value of availableRideHailVehicles in more detail! -> why are values zero?
+
+
+          val idRnd1 = Id.create(availableKeyset(0), classOf[Vehicle])
+          val idRnd2 = Id.create(availableKeyset(1), classOf[Vehicle])
+
+
+
+       //   val idRnd1 =Id.create("rideHailingVehicle-person=13",classOf[Vehicle])
+       //   val idRnd2 =Id.create("rideHailingVehicle-person=16",classOf[Vehicle])
 
           //val idRnd1 = availableKeyset.apply(rnd.nextInt(availableKeyset.size))
           //val idRnd2 = availableKeyset
@@ -533,13 +564,29 @@ class RideHailingManager(val name: String, val beamServices: BeamServices, val r
   }
 
 
+
+
+
+  // TODO: implement methods for use by resource allocation manager
+
+  def getFleetInfo() = ??? // this needs to give back all TNCs (e.g. vector of case class VehicleState(vehicleId, location,stateOfCharge, batteryCapacity, energyConsumptionPerMeter, isAvailable)
+
+  def getEstimatedLinkTravelTimesWithAdditionalLoad(linkLoads:Vector[LinkLoad]):TravelTimeCalculator = ??? // TODO: implement this method (e.g. use approximation using performance function)
+
+  def assignTNC(inquiryId: RideHailingInquiry, vehicleId:Id[Vehicle]) = ??? // just do what implementation is doing at the moment
+  // move code from reserveRide in here?
+
+  def moveIdleTNCTo(vehicleId: Id[Vehicle], coord: Coord) = ???
+
+
+
 }
 
 /**
   * BEAM
   */
 
-
+case class LinkLoad(startTime:Double, linkIds:Vector[Id[Link]])
 
 
 
