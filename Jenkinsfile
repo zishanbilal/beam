@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-stages {
+node {
     stage('Build') {
         steps {
             print 'Building...'
