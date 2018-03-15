@@ -21,5 +21,5 @@ node {
 }
 
 def gradle(command) {
-    sh "./gradlew ${command} --stacktrace"
+    sh "./gradlew ${command}"
 }
