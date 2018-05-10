@@ -1,5 +1,5 @@
 # BEAM
-(forked)
+(forked...)
 [![Build Status](https://travis-ci.org/LBNL-UCB-STI/beam.svg?branch=master)](https://travis-ci.org/LBNL-UCB-STI/beam)
 [![Documentation Status](https://readthedocs.org/projects/beam/badge/?version=latest)](http://beam.readthedocs.io/en/latest/?badge=latest)
 
